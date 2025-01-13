@@ -15,7 +15,7 @@ import { Feedback } from './entities/feedback.entity';
       type: 'postgres',
       url: process.env.DATABASE_URL,
       entities: [User, Feedback],
-      synchronize: true, // Set to false in production
+      synchronize: false, // Set to false in production
       ssl: {
         rejectUnauthorized: false, // Required for external connections to Render
       },
