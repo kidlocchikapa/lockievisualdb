@@ -13,13 +13,12 @@ import { Feedback } from './entities/feedback.entity';
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'Chloe01.24',
-      database: 'lockievisuals',
+      url: process.env.DATABASE_URL,
       entities: [User, Feedback],
       synchronize: true, // Set to false in production
+      ssl: {
+        rejectUnauthorized: false, // Required for external connections to Render
+      },
     }),
     AuthModule,
     FeedbackModule,
