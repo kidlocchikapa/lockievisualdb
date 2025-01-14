@@ -7,25 +7,26 @@ import { BookingModule } from './bookings/bookings.module';
 import { User } from './entities/user.entity';
 import { Feedback } from './entities/feedback.entity';
 import { Booking } from './entities/bookings.entity';
-import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 @Module({
   imports: [
+    // Load configuration variables globally
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
+    // TypeORM module configuration
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
+      useFactory: (configService: ConfigService) => {
         const isProduction = configService.get<string>('NODE_ENV') === 'production';
-
         return {
           type: 'postgres',
           ...(isProduction
             ? {
                 url: configService.get<string>('DATABASE_URL'),
                 ssl: {
-                  rejectUnauthorized: false,
+                  rejectUnauthorized: false, // For production environments
                 },
               }
             : {
@@ -35,14 +36,17 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
                 password: configService.get<string>('DB_PASSWORD', 'postgres'),
                 database: configService.get<string>('DB_NAME', 'mydatabase'),
               }),
-          entities: [User, Feedback, Booking], // Add Booking entity here
-          synchronize: configService.get<boolean>('DB_SYNCHRONIZE', false),
+          entities: [User, Feedback, Booking], // Ensure Booking is included
+          synchronize: configService.get<boolean>('DB_SYNCHRONIZE', true), // For development
+          autoLoadEntities: true, // Automatically load entities from modules
         };
       },
     }),
+
+    // Import application modules
     AuthModule,
     FeedbackModule,
-    BookingModule, // Add BookingModule here
+    BookingModule,
   ],
 })
 export class AppModule {}

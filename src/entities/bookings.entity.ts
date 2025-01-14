@@ -11,9 +11,9 @@ export class Booking {
   @Column()
   userEmail: string;
 
-  @CreateDateColumn()
-  createdAt: Date;
-
   @Column({ default: 'Pending' })
   status: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
 }
