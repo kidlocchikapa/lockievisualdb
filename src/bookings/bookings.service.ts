@@ -1,21 +1,17 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Booking } from '../entities/bookings.entity';
 
 @Injectable()
 export class BookingService {
-  async createBooking(serviceName: string, userId: number) {
-    const newBooking = {
-      userId,
-      serviceName,
-      date: new Date(),
-      status: 'Pending',
-    };
+  constructor(
+    @InjectRepository(Booking)
+    private bookingRepository: Repository<Booking>,
+  ) {}
 
-    // Save newBooking to the database (TypeORM, Prisma, etc.)
-    // Example: await this.bookingRepository.save(newBooking);
-
-    return {
-      message: 'Booking successful',
-      booking: newBooking,
-    };
+  async createBooking(bookingData: Partial<Booking>): Promise<Booking> {
+    const booking = this.bookingRepository.create(bookingData);
+    return this.bookingRepository.save(booking); // Save the booking in the database
   }
 }
