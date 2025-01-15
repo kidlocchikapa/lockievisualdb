@@ -31,18 +31,19 @@ import { ContactController } from './contact/contact.controller';
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
+        // Define isProduction here
         const isProduction = configService.get<string>('NODE_ENV') === 'production';
         
         return {
           type: 'postgres',
-          logging: true,
+          logging: !isProduction, // Disable logging in production
           ...(isProduction
             ? {
                 url: configService.get<string>('DATABASE_URL'),
                 ssl: {
-                  rejectUnauthorized: false,
+                  rejectUnauthorized: true, // Avoid rejectUnauthorized: false in production
                 },
-                synchronize: false,
+                synchronize: false, // Don't sync schema automatically in production
               }
             : {
                 host: configService.get<string>('DB_HOST'),
@@ -52,52 +53,57 @@ import { ContactController } from './contact/contact.controller';
                 database: configService.get<string>('DB_NAME'),
                 synchronize: configService.get<boolean>('DB_SYNCHRONIZE', false),
               }),
-          entities: [User, Feedback, Booking, Contact], // Added Contact entity
-          autoLoadEntities: true,
+          entities: [User, Feedback, Booking, Contact],
+          autoLoadEntities: false, // Manually load entities for production
         };
       },
     }),
-    
+
     MailerModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        transport: {
-          service: 'gmail',
-          host: 'smtp.gmail.com',
-          port: 465,
-          secure: true,
-          auth: {
-            user: configService.get<string>('EMAIL_USER'),
-            pass: configService.get<string>('EMAIL_PASSWORD'),
+      useFactory: async (configService: ConfigService) => {
+        // Define isProduction here for MailerModule
+        const isProduction = configService.get<string>('NODE_ENV') === 'production';
+
+        return {
+          transport: {
+            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            auth: {
+              user: configService.get<string>('EMAIL_USER'),
+              pass: configService.get<string>('EMAIL_PASSWORD'),
+            },
+            tls: {
+              rejectUnauthorized: true, // Enforce secure TLS connection
+            },
           },
-          tls: {
-            rejectUnauthorized: false,
+          defaults: {
+            from: `"Lockie Visuals" <${configService.get('EMAIL_USER')}>`,
           },
-        },
-        defaults: {
-          from: `"Lockie Visuals" <${configService.get('EMAIL_USER')}>`,
-        },
-        template: {
-          dir: process.cwd() + '/templates',
-          adapter: new HandlebarsAdapter(),
-          options: {
-            strict: true,
+          template: {
+            dir: process.cwd() + '/templates',
+            adapter: new HandlebarsAdapter(),
+            options: {
+              strict: !isProduction, // Disable strict mode in production
+            },
           },
-        },
-      }),
+        };
+      },
     }),
-    
+
     AuthModule,
     FeedbackModule,
     BookingModule,
-    TypeOrmModule.forFeature([Contact]), // Added TypeOrmModule for Contact
+    TypeOrmModule.forFeature([Contact]),
   ],
   controllers: [
-    ContactController, // Added ContactController
+    ContactController,
   ],
   providers: [
     EmailService,
-    ContactService, // Added ContactService
+    ContactService,
   ],
   exports: [EmailService],
 })
