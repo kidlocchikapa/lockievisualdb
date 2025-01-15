@@ -1,17 +1,18 @@
 import { 
-  Entity, 
-  PrimaryGeneratedColumn, 
-  Column, 
-  ManyToOne, 
-  CreateDateColumn, 
-  UpdateDateColumn 
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn
 } from 'typeorm';
 import { User } from './user.entity';
 
 export enum BookingStatus {
   PENDING = 'PENDING',
   CONFIRMED = 'CONFIRMED',
-  CANCELLED = 'CANCELLED'
+  CANCELLED = 'CANCELLED',
+  DELIVERED = 'DELIVERED'  // Added this status
 }
 
 @Entity()
@@ -41,7 +42,7 @@ export class Booking {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(() => User, user => user.bookings, { 
+  @ManyToOne(() => User, user => user.bookings, {
     nullable: false,
     onDelete: 'CASCADE'
   })

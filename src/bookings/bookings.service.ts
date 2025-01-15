@@ -40,12 +40,11 @@ export class BookingService {
       throw new NotFoundException(`Booking #${id} not found`);
     }
 
-    // Prevent updating if booking is already confirmed or cancelled
-    if (booking.status === BookingStatus.CONFIRMED || booking.status === BookingStatus.CANCELLED) {
+    // Prevent updating if booking is in a final state
+    if ([BookingStatus.CONFIRMED, BookingStatus.CANCELLED, BookingStatus.DELIVERED].includes(booking.status)) {
       throw new ForbiddenException(`Cannot update ${booking.status.toLowerCase()} booking`);
     }
 
-    // Update allowed fields
     if (updateBookingDto.serviceName) {
       booking.serviceName = updateBookingDto.serviceName;
     }
@@ -63,7 +62,7 @@ export class BookingService {
     return savedBooking;
   }
 
-  async changeStatus(id: number, newStatus: BookingStatus): Promise<Booking> {
+  async changeStatus(id: number, newStatus: BookingStatus, user?: User): Promise<Booking> {
     const booking = await this.bookingRepository.findOne({
       where: { id },
       relations: ['user']
@@ -73,14 +72,29 @@ export class BookingService {
       throw new NotFoundException(`Booking #${id} not found`);
     }
 
-    // Prevent status change if booking is already cancelled
+    // Status transition validations
     if (booking.status === BookingStatus.CANCELLED) {
       throw new ForbiddenException('Cannot change status of cancelled booking');
     }
 
-    // Prevent changing from CONFIRMED back to PENDING
+    if (booking.status === BookingStatus.DELIVERED) {
+      throw new ForbiddenException('Cannot change status of delivered booking');
+    }
+
     if (booking.status === BookingStatus.CONFIRMED && newStatus === BookingStatus.PENDING) {
       throw new ForbiddenException('Cannot change confirmed booking back to pending');
+    }
+
+    // Only allow specific status transitions
+    const allowedTransitions = {
+      [BookingStatus.PENDING]: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
+      [BookingStatus.CONFIRMED]: [BookingStatus.DELIVERED, BookingStatus.CANCELLED],
+      [BookingStatus.DELIVERED]: [],
+      [BookingStatus.CANCELLED]: [],
+    };
+
+    if (!allowedTransitions[booking.status].includes(newStatus)) {
+      throw new ForbiddenException(`Cannot change status from ${booking.status} to ${newStatus}`);
     }
 
     booking.status = newStatus;
@@ -90,6 +104,9 @@ export class BookingService {
     switch (newStatus) {
       case BookingStatus.CONFIRMED:
         await this.emailService.sendBookingConfirmedNotification(savedBooking);
+        break;
+      case BookingStatus.DELIVERED:
+        await this.emailService.sendServiceDeliveredNotification(savedBooking);
         break;
       case BookingStatus.CANCELLED:
         await this.emailService.sendBookingCancellationNotification(savedBooking);
@@ -103,6 +120,10 @@ export class BookingService {
     return this.changeStatus(id, BookingStatus.CONFIRMED);
   }
 
+  async markAsDelivered(id: number): Promise<Booking> {
+    return this.changeStatus(id, BookingStatus.DELIVERED);
+  }
+
   async cancelBooking(id: number, user: User): Promise<Booking> {
     const booking = await this.bookingRepository.findOne({
       where: { id },
@@ -114,11 +135,11 @@ export class BookingService {
     }
 
     // Only allow cancellation if it's the booking owner or an admin
-    if (booking.user.id !== user.id) {
+    if (booking.user.id !== user.id && user.role !== 'admin') {
       throw new ForbiddenException('You are not authorized to cancel this booking');
     }
 
-    return this.changeStatus(id, BookingStatus.CANCELLED);
+    return this.changeStatus(id, BookingStatus.CANCELLED, user);
   }
 
   async getUserBookings(userId: number): Promise<Booking[]> {

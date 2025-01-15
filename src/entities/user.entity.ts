@@ -19,13 +19,15 @@ export class User {
   @Column()
   password: string;
 
+  @Column({ default: 'user' })  // Added role column with default value
+  role: string;
+
   @OneToMany(() => Feedback, feedback => feedback.user, { eager: false })
   feedbacks: Feedback[];
 
   @OneToMany(() => Booking, booking => booking.user, { eager: false })
   bookings: Booking[];
 
-  // Helper method to get user's public profile
   toJSON() {
     const { password, ...userWithoutPassword } = this;
     return userWithoutPassword;

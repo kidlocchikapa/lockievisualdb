@@ -8,6 +8,7 @@ import {
   UseGuards,
   Req,
   ParseIntPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt.auth-guard';
 import { BookingService } from './bookings.service';
@@ -16,12 +17,15 @@ import { UpdateBookingDto } from '../dto/update-booking.dto';
 import { ChangeBookingStatusDto } from '../dto/change-booking-status.dto';
 import { CustomRequest } from '../interfaces/request.interface';
 import { BookingStatus } from '../entities/bookings.entity';
+import { Roles, UserRole } from '../decolators';
+import { RolesGuard } from '../guards/roles.guards';
 
 @Controller('bookings')
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
   @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.USER)
   @Post()
   createBooking(
     @Body() createBookingDto: CreateBookingDto,
@@ -52,18 +56,35 @@ export class BookingController {
     return this.bookingService.updateBooking(id, updateBookingDto, req.user);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Patch(':id/status')
   async changeBookingStatus(
     @Param('id', ParseIntPipe) id: number,
-    @Body() changeStatusDto: ChangeBookingStatusDto
+    @Body() changeStatusDto: ChangeBookingStatusDto,
+    @Req() req: CustomRequest
   ) {
-    return this.bookingService.changeStatus(id, changeStatusDto.status);
+    return this.bookingService.changeStatus(id, changeStatusDto.status, req.user);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Patch(':id/confirm')
-  async confirmBooking(@Param('id', ParseIntPipe) id: number) {
-    return this.bookingService.changeStatus(id, BookingStatus.CONFIRMED);
+  async confirmBooking(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: CustomRequest
+  ) {
+    return this.bookingService.changeStatus(id, BookingStatus.CONFIRMED, req.user);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Patch(':id/deliver')
+  async markAsDelivered(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: CustomRequest
+  ) {
+    return this.bookingService.changeStatus(id, BookingStatus.DELIVERED, req.user);
   }
 
   @UseGuards(JwtAuthGuard)
