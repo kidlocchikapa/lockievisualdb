@@ -31,27 +31,29 @@ import { ContactController } from './contact/contact.controller';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
         const isProduction = configService.get<string>('NODE_ENV') === 'production';
+        const databaseConfig = isProduction
+          ? {
+              url: configService.get<string>('DATABASE_URL'),
+              ssl: {
+                rejectUnauthorized: false, // For trusted certificates, set this to true.
+              },
+              synchronize: false, // Disable schema sync in production
+            }
+          : {
+              host: configService.get<string>('DB_HOST'),
+              port: configService.get<number>('DB_PORT', 5432),
+              username: configService.get<string>('DB_USERNAME'),
+              password: configService.get<string>('DB_PASSWORD'),
+              database: configService.get<string>('DB_NAME'),
+              synchronize: configService.get<boolean>('DB_SYNCHRONIZE', false),
+            };
+
         return {
           type: 'postgres',
-          logging: !isProduction, // Disable logging in production
-          ssl: isProduction
-            ? { rejectUnauthorized: true } // Enforce SSL in production
-            : undefined,
-          ...(isProduction
-            ? {
-                url: configService.get<string>('DATABASE_URL'),
-                synchronize: false, // Avoid schema sync in production
-              }
-            : {
-                host: configService.get<string>('DB_HOST'),
-                port: configService.get<number>('DB_PORT', 5432), // Default to 5432 if not set
-                username: configService.get<string>('DB_USERNAME'),
-                password: configService.get<string>('DB_PASSWORD'),
-                database: configService.get<string>('DB_NAME'),
-                synchronize: configService.get<boolean>('DB_SYNCHRONIZE', false),
-              }),
+          logging: !isProduction, // Enable logging in non-production environments
           entities: [User, Feedback, Booking, Contact],
-          autoLoadEntities: false, // Disable auto-entity loading in production
+          autoLoadEntities: false, // Explicitly load entities
+          ...databaseConfig,
         };
       },
     }),
@@ -62,13 +64,13 @@ import { ContactController } from './contact/contact.controller';
           service: 'gmail',
           host: 'smtp.gmail.com',
           port: 465,
-          secure: true, // Enforce secure connection
+          secure: true,
           auth: {
             user: configService.get<string>('EMAIL_USER'),
             pass: configService.get<string>('EMAIL_PASSWORD'),
           },
           tls: {
-            rejectUnauthorized: true, // Enforce secure TLS connection
+            rejectUnauthorized: true, // Enforce secure TLS
           },
         },
         defaults: {
@@ -78,7 +80,7 @@ import { ContactController } from './contact/contact.controller';
           dir: process.cwd() + '/templates',
           adapter: new HandlebarsAdapter(),
           options: {
-            strict: false, // Disable strict template checks
+            strict: false,
           },
         },
       }),
