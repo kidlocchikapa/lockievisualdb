@@ -27,84 +27,69 @@ import { ContactController } from './contact/contact.controller';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
-        // Define isProduction here
         const isProduction = configService.get<string>('NODE_ENV') === 'production';
-        
         return {
           type: 'postgres',
           logging: !isProduction, // Disable logging in production
+          ssl: isProduction
+            ? { rejectUnauthorized: true } // Enforce SSL in production
+            : undefined,
           ...(isProduction
             ? {
                 url: configService.get<string>('DATABASE_URL'),
-                ssl: {
-                  rejectUnauthorized: true, // Avoid rejectUnauthorized: false in production
-                },
-                synchronize: false, // Don't sync schema automatically in production
+                synchronize: false, // Avoid schema sync in production
               }
             : {
                 host: configService.get<string>('DB_HOST'),
-                port: configService.get<number>('DB_PORT'),
+                port: configService.get<number>('DB_PORT', 5432), // Default to 5432 if not set
                 username: configService.get<string>('DB_USERNAME'),
                 password: configService.get<string>('DB_PASSWORD'),
                 database: configService.get<string>('DB_NAME'),
                 synchronize: configService.get<boolean>('DB_SYNCHRONIZE', false),
               }),
           entities: [User, Feedback, Booking, Contact],
-          autoLoadEntities: false, // Manually load entities for production
+          autoLoadEntities: false, // Disable auto-entity loading in production
         };
       },
     }),
-
     MailerModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => {
-        // Define isProduction here for MailerModule
-        const isProduction = configService.get<string>('NODE_ENV') === 'production';
-
-        return {
-          transport: {
-            service: 'gmail',
-            host: 'smtp.gmail.com',
-            port: 465,
-            secure: true,
-            auth: {
-              user: configService.get<string>('EMAIL_USER'),
-              pass: configService.get<string>('EMAIL_PASSWORD'),
-            },
-            tls: {
-              rejectUnauthorized: true, // Enforce secure TLS connection
-            },
+      useFactory: async (configService: ConfigService) => ({
+        transport: {
+          service: 'gmail',
+          host: 'smtp.gmail.com',
+          port: 465,
+          secure: true, // Enforce secure connection
+          auth: {
+            user: configService.get<string>('EMAIL_USER'),
+            pass: configService.get<string>('EMAIL_PASSWORD'),
           },
-          defaults: {
-            from: `"Lockie Visuals" <${configService.get('EMAIL_USER')}>`,
+          tls: {
+            rejectUnauthorized: true, // Enforce secure TLS connection
           },
-          template: {
-            dir: process.cwd() + '/templates',
-            adapter: new HandlebarsAdapter(),
-            options: {
-              strict: !isProduction, // Disable strict mode in production
-            },
+        },
+        defaults: {
+          from: `"Lockie Visuals" <${configService.get('EMAIL_USER')}>`,
+        },
+        template: {
+          dir: process.cwd() + '/templates',
+          adapter: new HandlebarsAdapter(),
+          options: {
+            strict: false, // Disable strict template checks
           },
-        };
-      },
+        },
+      }),
     }),
-
     AuthModule,
     FeedbackModule,
     BookingModule,
     TypeOrmModule.forFeature([Contact]),
   ],
-  controllers: [
-    ContactController,
-  ],
-  providers: [
-    EmailService,
-    ContactService,
-  ],
+  controllers: [ContactController],
+  providers: [EmailService, ContactService],
   exports: [EmailService],
 })
 export class AppModule {}
