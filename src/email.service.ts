@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
-import { Booking } from './entities/bookings.entity';
 import { ConfigService } from '@nestjs/config';
+import { Booking } from './entities/bookings.entity';
+import { Contact } from './entities/contact.entity';
 
 @Injectable()
 export class EmailService {
@@ -43,6 +44,28 @@ export class EmailService {
       this.logger.error(`Failed to send email to ${options.to}:`, error);
       throw new Error(`Failed to send email: ${error.message}`);
     }
+  }
+
+  async sendContactNotification(contact: Contact): Promise<void> {
+    await this.sendEmail({
+      to: 'kidloc24chikapa@gmail.com', // Your admin email
+      subject: 'ContactUs Message',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>New Contact Form Message</h2>
+          <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px;">
+            <p><strong>From:</strong> ${contact.name} (${contact.email})</p>
+            <p><strong>Subject:</strong> ${contact.subject}</p>
+            <p><strong>Message:</strong></p>
+            <p style="white-space: pre-wrap;">${contact.message}</p>
+            <p><strong>Sent at:</strong> ${contact.createdAt.toLocaleString()}</p>
+          </div>
+          <p style="color: #666; margin-top: 20px;">
+            You can view all messages in your admin dashboard.
+          </p>
+        </div>
+      `,
+    });
   }
 
   async sendBookingNotification(booking: Booking): Promise<void> {

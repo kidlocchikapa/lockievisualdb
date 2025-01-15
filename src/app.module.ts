@@ -13,7 +13,14 @@ import { BookingModule } from './bookings/bookings.module';
 import { User } from './entities/user.entity';
 import { Feedback } from './entities/feedback.entity';
 import { Booking } from './entities/bookings.entity';
+import { Contact } from './entities/contact.entity';
+
+// Services
 import { EmailService } from './email.service';
+import { ContactService } from './contact/contact.service';
+
+// Controllers
+import { ContactController } from './contact/contact.controller';
 
 @Module({
   imports: [
@@ -45,7 +52,7 @@ import { EmailService } from './email.service';
                 database: configService.get<string>('DB_NAME'),
                 synchronize: configService.get<boolean>('DB_SYNCHRONIZE', false),
               }),
-          entities: [User, Feedback, Booking],
+          entities: [User, Feedback, Booking, Contact], // Added Contact entity
           autoLoadEntities: true,
         };
       },
@@ -83,8 +90,15 @@ import { EmailService } from './email.service';
     AuthModule,
     FeedbackModule,
     BookingModule,
+    TypeOrmModule.forFeature([Contact]), // Added TypeOrmModule for Contact
   ],
-  providers: [EmailService],
+  controllers: [
+    ContactController, // Added ContactController
+  ],
+  providers: [
+    EmailService,
+    ContactService, // Added ContactService
+  ],
   exports: [EmailService],
 })
 export class AppModule {}
