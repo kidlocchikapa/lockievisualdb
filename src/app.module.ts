@@ -34,10 +34,17 @@ import { ContactController } from './contact/contact.controller';
         const databaseConfig = isProduction
           ? {
               url: configService.get<string>('DATABASE_URL'),
-              ssl: {
-                rejectUnauthorized: false, // For trusted certificates, set this to true.
+              ssl: true,
+              extra: {
+                ssl: {
+                  rejectUnauthorized: false,
+                },
               },
-              synchronize: false, // Disable schema sync in production
+              pool: {
+                max: 20,
+                connectionTimeoutMillis: 10000,
+                idleTimeoutMillis: 30000
+              },
             }
           : {
               host: configService.get<string>('DB_HOST'),
@@ -50,9 +57,9 @@ import { ContactController } from './contact/contact.controller';
 
         return {
           type: 'postgres',
-          logging: !isProduction, // Enable logging in non-production environments
+          logging: isProduction ? ['error', 'warn'] : ['query', 'error', 'schema', 'warn', 'info', 'log'],
           entities: [User, Feedback, Booking, Contact],
-          autoLoadEntities: false, // Explicitly load entities
+          autoLoadEntities: false,
           ...databaseConfig,
         };
       },
@@ -70,7 +77,7 @@ import { ContactController } from './contact/contact.controller';
             pass: configService.get<string>('EMAIL_PASSWORD'),
           },
           tls: {
-            rejectUnauthorized: true, // Enforce secure TLS
+            rejectUnauthorized: true,
           },
         },
         defaults: {
