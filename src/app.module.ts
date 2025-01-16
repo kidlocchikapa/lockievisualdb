@@ -25,25 +25,29 @@ import { ContactController } from './contact/contact.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true,
+      isGlobal: true, // Ensures configuration is globally available
     }),
+
+    // Database connection
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
         const isProduction = configService.get<string>('NODE_ENV') === 'production';
+
+        // Handling database configuration for production vs local environments
         const databaseConfig = isProduction
           ? {
               url: configService.get<string>('DATABASE_URL'),
               ssl: true,
               extra: {
                 ssl: {
-                  rejectUnauthorized: false,
+                  rejectUnauthorized: false, // Allows self-signed certificates in production
                 },
               },
               pool: {
                 max: 20,
                 connectionTimeoutMillis: 10000,
-                idleTimeoutMillis: 30000
+                idleTimeoutMillis: 30000,
               },
             }
           : {
@@ -52,18 +56,23 @@ import { ContactController } from './contact/contact.controller';
               username: configService.get<string>('DB_USERNAME'),
               password: configService.get<string>('DB_PASSWORD'),
               database: configService.get<string>('DB_NAME'),
-              synchronize: configService.get<boolean>('DB_SYNCHRONIZE', false),
+              synchronize: configService.get<boolean>('DB_SYNCHRONIZE', false), // Should be false in production
             };
 
+        // Return TypeORM connection configuration
         return {
           type: 'postgres',
-          logging: isProduction ? ['error', 'warn'] : ['query', 'error', 'schema', 'warn', 'info', 'log'],
-          entities: [User, Feedback, Booking, Contact],
-          autoLoadEntities: false,
+          logging: isProduction
+            ? ['error', 'warn']
+            : ['query', 'error', 'schema', 'warn', 'info', 'log'], // Adjust logging based on environment
+          entities: [User, Feedback, Booking, Contact], // Ensure all entities are included
+          autoLoadEntities: false, // Controls entity loading. Set to true for automatic entity discovery.
           ...databaseConfig,
         };
       },
     }),
+
+    // Mailer configuration
     MailerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
@@ -77,28 +86,32 @@ import { ContactController } from './contact/contact.controller';
             pass: configService.get<string>('EMAIL_PASSWORD'),
           },
           tls: {
-            rejectUnauthorized: true,
+            rejectUnauthorized: true, // For secure connection in production
           },
         },
         defaults: {
-          from: `"Lockie Visuals" <${configService.get('EMAIL_USER')}>`,
+          from: `"Lockie Visuals" <${configService.get('EMAIL_USER')}>`, // Default email from address
         },
         template: {
           dir: process.cwd() + '/templates',
           adapter: new HandlebarsAdapter(),
           options: {
-            strict: false,
+            strict: false, // Allow missing template variables
           },
         },
       }),
     }),
+
+    // Feature modules
     AuthModule,
     FeedbackModule,
     BookingModule,
-    TypeOrmModule.forFeature([Contact]),
+
+    // Entities for TypeORM
+    TypeOrmModule.forFeature([Contact]), // Import Contact repository for the service
   ],
-  controllers: [ContactController],
-  providers: [EmailService, ContactService],
-  exports: [EmailService],
+  controllers: [ContactController], // Register the Contact controller
+  providers: [EmailService, ContactService], // Register email and contact services
+  exports: [EmailService], // Export EmailService for use in other modules
 })
 export class AppModule {}
