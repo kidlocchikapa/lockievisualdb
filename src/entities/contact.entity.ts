@@ -3,7 +3,7 @@ import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeor
 
 @Entity('contacts')
 export class Contact {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('increment')
   id: number;
 
   @Column()

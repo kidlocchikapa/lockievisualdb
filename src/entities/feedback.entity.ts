@@ -4,7 +4,7 @@ import { User } from './user.entity';
 
 @Entity()
 export class Feedback {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('increment')
   id: number;
 
   @Column()

@@ -17,7 +17,7 @@ export enum BookingStatus {
 
 @Entity()
 export class Booking {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('increment')
   id: number;
 
   @Column()

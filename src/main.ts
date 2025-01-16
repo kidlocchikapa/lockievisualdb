@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import "reflect-metadata";
 import { AppModule } from './app.module';
 
 async function bootstrap() {

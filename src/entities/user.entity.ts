@@ -4,7 +4,7 @@ import { Booking } from './bookings.entity';
 
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('increment')
   id: number;
 
   @Column()
