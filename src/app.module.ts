@@ -8,6 +8,7 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { AuthModule } from './auth/auth.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { BookingModule } from './bookings/bookings.module';
+import { AdminModule } from './admin/admin.module';
 
 // Entities
 import { User } from './entities/user.entity';
@@ -106,6 +107,8 @@ import { ContactController } from './contact/contact.controller';
     AuthModule,
     FeedbackModule,
     BookingModule,
+    AdminModule,
+
 
     // Entities for TypeORM
     TypeOrmModule.forFeature([Contact]), // Import Contact repository for the service

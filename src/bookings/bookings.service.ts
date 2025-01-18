@@ -30,14 +30,19 @@ export class BookingService {
     return savedBooking;
   }
 
-  async updateBooking(id: number, updateBookingDto: UpdateBookingDto, user: User): Promise<Booking> {
+  async updateBooking(id: number, updateBookingDto: UpdateBookingDto, user?: User): Promise<Booking> {
     const booking = await this.bookingRepository.findOne({
-      where: { id, user: { id: user.id } },
+      where: { id },
       relations: ['user']
     });
 
     if (!booking) {
       throw new NotFoundException(`Booking #${id} not found`);
+    }
+
+    // If user is provided and not admin, check if they own the booking
+    if (user && user.role !== 'admin' && booking.user.id !== user.id) {
+      throw new ForbiddenException('You are not authorized to update this booking');
     }
 
     // Prevent updating if booking is in a final state
@@ -124,7 +129,7 @@ export class BookingService {
     return this.changeStatus(id, BookingStatus.DELIVERED);
   }
 
-  async cancelBooking(id: number, user: User): Promise<Booking> {
+  async cancelBooking(id: number, user?: User): Promise<Booking> {
     const booking = await this.bookingRepository.findOne({
       where: { id },
       relations: ['user']
@@ -135,7 +140,7 @@ export class BookingService {
     }
 
     // Only allow cancellation if it's the booking owner or an admin
-    if (booking.user.id !== user.id && user.role !== 'admin') {
+    if (user && user.role !== 'admin' && booking.user.id !== user.id) {
       throw new ForbiddenException('You are not authorized to cancel this booking');
     }
 
@@ -160,5 +165,12 @@ export class BookingService {
     }
 
     return booking;
+  }
+
+  async getAllBookings(): Promise<Booking[]> {
+    return this.bookingRepository.find({
+      relations: ['user'],
+      order: { createdAt: 'DESC' }
+    });
   }
 }

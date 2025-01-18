@@ -37,11 +37,14 @@ let BookingService = class BookingService {
     }
     async updateBooking(id, updateBookingDto, user) {
         const booking = await this.bookingRepository.findOne({
-            where: { id, user: { id: user.id } },
+            where: { id },
             relations: ['user']
         });
         if (!booking) {
             throw new common_1.NotFoundException(`Booking #${id} not found`);
+        }
+        if (user && user.role !== 'admin' && booking.user.id !== user.id) {
+            throw new common_1.ForbiddenException('You are not authorized to update this booking');
         }
         if ([bookings_entity_1.BookingStatus.CONFIRMED, bookings_entity_1.BookingStatus.CANCELLED, bookings_entity_1.BookingStatus.DELIVERED].includes(booking.status)) {
             throw new common_1.ForbiddenException(`Cannot update ${booking.status.toLowerCase()} booking`);
@@ -114,7 +117,7 @@ let BookingService = class BookingService {
         if (!booking) {
             throw new common_1.NotFoundException(`Booking #${id} not found`);
         }
-        if (booking.user.id !== user.id && user.role !== 'admin') {
+        if (user && user.role !== 'admin' && booking.user.id !== user.id) {
             throw new common_1.ForbiddenException('You are not authorized to cancel this booking');
         }
         return this.changeStatus(id, bookings_entity_1.BookingStatus.CANCELLED, user);
@@ -134,6 +137,12 @@ let BookingService = class BookingService {
             throw new common_1.NotFoundException(`Booking #${id} not found`);
         }
         return booking;
+    }
+    async getAllBookings() {
+        return this.bookingRepository.find({
+            relations: ['user'],
+            order: { createdAt: 'DESC' }
+        });
     }
 };
 exports.BookingService = BookingService;

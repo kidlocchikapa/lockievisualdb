@@ -15,6 +15,7 @@ const handlebars_adapter_1 = require("@nestjs-modules/mailer/dist/adapters/handl
 const auth_module_1 = require("./auth/auth.module");
 const feedback_module_1 = require("./feedback/feedback.module");
 const bookings_module_1 = require("./bookings/bookings.module");
+const admin_module_1 = require("./admin/admin.module");
 const user_entity_1 = require("./entities/user.entity");
 const feedback_entity_1 = require("./entities/feedback.entity");
 const bookings_entity_1 = require("./entities/bookings.entity");
@@ -100,6 +101,7 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             feedback_module_1.FeedbackModule,
             bookings_module_1.BookingModule,
+            admin_module_1.AdminModule,
             typeorm_1.TypeOrmModule.forFeature([contact_entity_1.Contact]),
         ],
         controllers: [contact_controller_1.ContactController],

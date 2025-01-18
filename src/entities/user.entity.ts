@@ -28,6 +28,8 @@ export class User {
   @OneToMany(() => Booking, booking => booking.user, { eager: false })
   bookings: Booking[];
 
+  
+
   toJSON() {
     const { password, ...userWithoutPassword } = this;
     return userWithoutPassword;
