@@ -1,8 +1,10 @@
+// user.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Exclude, Transform } from 'class-transformer';
 import { Feedback } from './feedback.entity';
 import { Booking } from './bookings.entity';
 
-@Entity()
+@Entity('users') // Specify table name
 export class User {
   @PrimaryGeneratedColumn('increment')
   id: number;
@@ -16,7 +18,8 @@ export class User {
   @Column()
   phoneNumber: string;
 
-  @Column({ select: false }) // This ensures password isn't loaded by default
+  @Column()
+  @Exclude({ toPlainOnly: true }) // Better way to exclude password
   password: string;
 
   @Column({ default: 'user' })
@@ -26,15 +29,19 @@ export class User {
   isEmailVerified: boolean;
 
   @Column({ nullable: true })
+  @Exclude({ toPlainOnly: true })
   verificationToken: string;
 
   @Column({ type: 'timestamp', nullable: true })
+  @Exclude({ toPlainOnly: true })
   verificationTokenExpiry: Date;
 
   @CreateDateColumn()
+  @Transform(({ value }) => value.toISOString())
   createdAt: Date;
 
   @UpdateDateColumn()
+  @Transform(({ value }) => value.toISOString())
   updatedAt: Date;
 
   @OneToMany(() => Feedback, feedback => feedback.user, { 
@@ -49,14 +56,7 @@ export class User {
   })
   bookings: Booking[];
 
-  // Method to remove sensitive data when converting to JSON
-  toJSON() {
-    const { 
-      password, 
-      verificationToken, 
-      verificationTokenExpiry, 
-      ...userWithoutSensitiveData 
-    } = this;
-    return userWithoutSensitiveData;
+  constructor(partial: Partial<User>) {
+    Object.assign(this, partial);
   }
 }

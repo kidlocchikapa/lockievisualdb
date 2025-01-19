@@ -11,12 +11,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
 const typeorm_1 = require("typeorm");
+const class_transformer_1 = require("class-transformer");
 const feedback_entity_1 = require("./feedback.entity");
 const bookings_entity_1 = require("./bookings.entity");
 let User = class User {
-    toJSON() {
-        const { password, verificationToken, verificationTokenExpiry, ...userWithoutSensitiveData } = this;
-        return userWithoutSensitiveData;
+    constructor(partial) {
+        Object.assign(this, partial);
     }
 };
 exports.User = User;
@@ -37,7 +37,8 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "phoneNumber", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ select: false }),
+    (0, typeorm_1.Column)(),
+    (0, class_transformer_1.Exclude)({ toPlainOnly: true }),
     __metadata("design:type", String)
 ], User.prototype, "password", void 0);
 __decorate([
@@ -50,18 +51,22 @@ __decorate([
 ], User.prototype, "isEmailVerified", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
+    (0, class_transformer_1.Exclude)({ toPlainOnly: true }),
     __metadata("design:type", String)
 ], User.prototype, "verificationToken", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    (0, class_transformer_1.Exclude)({ toPlainOnly: true }),
     __metadata("design:type", Date)
 ], User.prototype, "verificationTokenExpiry", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
+    (0, class_transformer_1.Transform)(({ value }) => value.toISOString()),
     __metadata("design:type", Date)
 ], User.prototype, "createdAt", void 0);
 __decorate([
     (0, typeorm_1.UpdateDateColumn)(),
+    (0, class_transformer_1.Transform)(({ value }) => value.toISOString()),
     __metadata("design:type", Date)
 ], User.prototype, "updatedAt", void 0);
 __decorate([
@@ -79,5 +84,6 @@ __decorate([
     __metadata("design:type", Array)
 ], User.prototype, "bookings", void 0);
 exports.User = User = __decorate([
-    (0, typeorm_1.Entity)()
+    (0, typeorm_1.Entity)('users'),
+    __metadata("design:paramtypes", [Object])
 ], User);

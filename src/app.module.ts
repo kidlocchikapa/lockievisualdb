@@ -1,8 +1,12 @@
+// app.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ClassSerializerInterceptor } from '@nestjs/common';
+import { LoggerOptions } from 'typeorm';
 
 // Modules
 import { AuthModule } from './auth/auth.module';
@@ -26,55 +30,58 @@ import { ContactController } from './contact/contact.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, // Ensures configuration is globally available
+      isGlobal: true,
+      cache: true,
+      envFilePath: ['.env', '.env.development', '.env.production'],
     }),
 
     // Database connection
     TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
         const isProduction = configService.get<string>('NODE_ENV') === 'production';
 
-        // Handling database configuration for production vs local environments
-        const databaseConfig = isProduction
-          ? {
-              url: configService.get<string>('DATABASE_URL'),
-              ssl: true,
-              extra: {
-                ssl: {
-                  rejectUnauthorized: false, // Allows self-signed certificates in production
-                },
-              },
-              pool: {
-                max: 20,
-                connectionTimeoutMillis: 10000,
-                idleTimeoutMillis: 30000,
-              },
-            }
-          : {
-              host: configService.get<string>('DB_HOST'),
-              port: configService.get<number>('DB_PORT', 5432),
-              username: configService.get<string>('DB_USERNAME'),
-              password: configService.get<string>('DB_PASSWORD'),
-              database: configService.get<string>('DB_NAME'),
-              synchronize: configService.get<boolean>('DB_SYNCHRONIZE', false), // Should be false in production
-            };
+        const baseConfig = {
+          type: 'postgres' as const,
+          logging: isProduction ? ['error'] as LoggerOptions : true,
+          entities: [User, Feedback, Booking, Contact],
+          autoLoadEntities: true,
+          synchronize: !isProduction,
+          retryAttempts: 3,
+          retryDelay: 3000,
+        };
 
-        // Return TypeORM connection configuration
+        if (isProduction) {
+          return {
+            ...baseConfig,
+            url: configService.get<string>('DATABASE_URL'),
+            ssl: {
+              rejectUnauthorized: false,
+            },
+            pool: {
+              min: 2,
+              max: 20,
+              idleTimeoutMillis: 30000,
+              acquireTimeoutMillis: 20000,
+            },
+          };
+        }
+
         return {
-          type: 'postgres',
-          logging: isProduction
-            ? ['error', 'warn']
-            : ['query', 'error', 'schema', 'warn', 'info', 'log'], // Adjust logging based on environment
-          entities: [User, Feedback, Booking, Contact], // Ensure all entities are included
-          autoLoadEntities: false, // Controls entity loading. Set to true for automatic entity discovery.
-          ...databaseConfig,
+          ...baseConfig,
+          host: configService.get<string>('DB_HOST', 'localhost'),
+          port: configService.get<number>('DB_PORT', 5432),
+          username: configService.get<string>('DB_USERNAME'),
+          password: configService.get<string>('DB_PASSWORD'),
+          database: configService.get<string>('DB_NAME'),
         };
       },
     }),
 
     // Mailer configuration
     MailerModule.forRootAsync({
+      imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         transport: {
@@ -87,19 +94,20 @@ import { ContactController } from './contact/contact.controller';
             pass: configService.get<string>('EMAIL_PASSWORD'),
           },
           tls: {
-            rejectUnauthorized: true, // For secure connection in production
+            rejectUnauthorized: true,
           },
         },
         defaults: {
-          from: `"Lockie Visuals" <${configService.get('EMAIL_USER')}>`, // Default email from address
+          from: `"Lockie Visuals" <${configService.get('EMAIL_USER')}>`,
         },
         template: {
           dir: process.cwd() + '/templates',
           adapter: new HandlebarsAdapter(),
           options: {
-            strict: false, // Allow missing template variables
+            strict: false,
           },
         },
+        preview: configService.get('NODE_ENV') !== 'production',
       }),
     }),
 
@@ -109,12 +117,18 @@ import { ContactController } from './contact/contact.controller';
     BookingModule,
     AdminModule,
 
-
-    // Entities for TypeORM
-    TypeOrmModule.forFeature([Contact]), // Import Contact repository for the service
+    // Entity modules
+    TypeOrmModule.forFeature([Contact]),
   ],
-  controllers: [ContactController], // Register the Contact controller
-  providers: [EmailService, ContactService], // Register email and contact services
-  exports: [EmailService], // Export EmailService for use in other modules
+  controllers: [ContactController],
+  providers: [
+    EmailService, 
+    ContactService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ClassSerializerInterceptor,
+    },
+  ],
+  exports: [EmailService],
 })
 export class AppModule {}

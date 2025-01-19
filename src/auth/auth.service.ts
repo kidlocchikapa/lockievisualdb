@@ -1,5 +1,5 @@
-// 4. Updated AuthService (auth.service.ts)
-import { Injectable, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
+// auth.service.ts
+import { Injectable, UnauthorizedException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -13,6 +13,8 @@ import { addHours } from 'date-fns';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -21,104 +23,150 @@ export class AuthService {
   ) {}
 
   async signup(createUserDto: CreateUserDto) {
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    const verificationToken = uuidv4();
-    const verificationTokenExpiry = addHours(new Date(), 24);
-
-    const user = this.userRepository.create({
-      ...createUserDto,
-      password: hashedPassword,
-      verificationToken,
-      verificationTokenExpiry,
-      isEmailVerified: false,
-    });
-
     try {
-      await this.userRepository.save(user);
-      await this.emailService.sendVerificationEmail(user.email, verificationToken);
-      return { 
-        message: 'Registration successful. Please check your email to verify your account.' 
-      };
-    } catch (error) {
-      if (error.code === '23505') {
+      const existingUser = await this.userRepository.findOne({
+        where: { email: createUserDto.email }
+      });
+
+      if (existingUser) {
         throw new UnauthorizedException('Email already exists');
       }
-      throw error;
+
+      const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+      const verificationToken = uuidv4();
+      const verificationTokenExpiry = addHours(new Date(), 24);
+
+      const user = this.userRepository.create({
+        ...createUserDto,
+        password: hashedPassword,
+        verificationToken,
+        verificationTokenExpiry,
+        isEmailVerified: false,
+      });
+
+      await this.userRepository.save(user);
+      await this.emailService.sendVerificationEmail(user.email, verificationToken);
+
+      return {
+        message: 'Registration successful. Please check your email to verify your account.',
+      };
+    } catch (error) {
+      this.logger.error(`Signup failed: ${error.message}`, error.stack);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new BadRequestException('Registration failed. Please try again.');
     }
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.userRepository.findOne({
-      where: { email: loginDto.email }
-    });
+    try {
+      const user = await this.userRepository.findOne({
+        where: { email: loginDto.email }
+      });
 
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      if (!user.isEmailVerified) {
+        throw new UnauthorizedException('Please verify your email before logging in');
+      }
+
+      const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      const payload = { 
+        sub: user.id, 
+        email: user.email,
+        isEmailVerified: user.isEmailVerified
+      };
+      
+      const access_token = await this.jwtService.sign(payload);
+
+      return {
+        access_token: `Bearer ${access_token}`,
+        user: {
+          id: user.id,
+          email: user.email,
+          isEmailVerified: user.isEmailVerified
+        }
+      };
+    } catch (error) {
+      this.logger.error(`Login failed: ${error.message}`, error.stack);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new BadRequestException('Login failed. Please try again.');
     }
-
-    if (!user.isEmailVerified) {
-      throw new UnauthorizedException('Please verify your email before logging in');
-    }
-
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    const payload = { sub: user.id, email: user.email };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
   }
 
   async verifyEmail(token: string) {
-    const user = await this.userRepository.findOne({
-      where: { verificationToken: token }
-    });
+    try {
+      const user = await this.userRepository.findOne({
+        where: { verificationToken: token }
+      });
 
-    if (!user) {
-      throw new NotFoundException('Invalid verification token');
+      if (!user) {
+        throw new NotFoundException('Invalid verification token');
+      }
+
+      if (new Date() > user.verificationTokenExpiry) {
+        throw new BadRequestException('Verification token has expired');
+      }
+
+      user.isEmailVerified = true;
+      user.verificationToken = null;
+      user.verificationTokenExpiry = null;
+
+      await this.userRepository.save(user);
+
+      return {
+        message: 'Email verified successfully',
+      };
+    } catch (error) {
+      this.logger.error(`Email verification failed: ${error.message}`, error.stack);
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('Email verification failed. Please try again.');
     }
-
-    if (new Date() > user.verificationTokenExpiry) {
-      throw new BadRequestException('Verification token has expired');
-    }
-
-    user.isEmailVerified = true;
-    user.verificationToken = null;
-    user.verificationTokenExpiry = null;
-
-    await this.userRepository.save(user);
-
-    return {
-      message: 'Email verified successfully',
-    };
   }
 
   async resendVerificationEmail(email: string) {
-    const user = await this.userRepository.findOne({
-      where: { email }
-    });
+    try {
+      const user = await this.userRepository.findOne({
+        where: { email }
+      });
 
-    if (!user) {
-      throw new NotFoundException('User not found');
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      if (user.isEmailVerified) {
+        throw new BadRequestException('Email is already verified');
+      }
+
+      const verificationToken = uuidv4();
+      const verificationTokenExpiry = addHours(new Date(), 24);
+
+      user.verificationToken = verificationToken;
+      user.verificationTokenExpiry = verificationTokenExpiry;
+
+      await this.userRepository.save(user);
+      await this.emailService.sendVerificationEmail(user.email, verificationToken);
+
+      return {
+        message: 'Verification email has been resent',
+      };
+    } catch (error) {
+      this.logger.error(`Resend verification email failed: ${error.message}`, error.stack);
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to resend verification email. Please try again.');
     }
-
-    if (user.isEmailVerified) {
-      throw new BadRequestException('Email is already verified');
-    }
-
-    const verificationToken = uuidv4();
-    const verificationTokenExpiry = addHours(new Date(), 24);
-
-    user.verificationToken = verificationToken;
-    user.verificationTokenExpiry = verificationTokenExpiry;
-
-    await this.userRepository.save(user);
-    await this.emailService.sendVerificationEmail(user.email, verificationToken);
-
-    return {
-      message: 'Verification email has been resent',
-    };
   }
 }
