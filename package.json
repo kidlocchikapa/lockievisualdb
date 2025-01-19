@@ -9,7 +9,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "npx tsc", 
+    "build": "npx tsc",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -26,7 +26,7 @@
     "migration:generate": "npm run typeorm -- migration:generate src/migrations -d src/data-source.ts --name",
     "migration:run": "npm run typeorm -- migration:run -d src/data-source.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d src/data-source.ts",
-    "postinstall": "npm run build" 
+    "postinstall": "npm run build"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.0.2",
@@ -44,6 +44,7 @@
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "date-fns": "^4.1.0",
     "nodemailer": "^6.9.16",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -51,7 +52,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "tsconfig-paths": "^4.2.0",
-    "typeorm": "^0.3.20"
+    "typeorm": "^0.3.20",
+    "uuid": "^11.0.5"
   },
   "devDependencies": {
     "@nestjs/testing": "^10.0.0",
@@ -70,7 +72,7 @@
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.4.3",
-    "typescript": "^5.7.3" 
+    "typescript": "^5.7.3"
   },
   "jest": {
     "moduleFileExtensions": [

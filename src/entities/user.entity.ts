@@ -19,8 +19,17 @@ export class User {
   @Column()
   password: string;
 
-  @Column({ default: 'user' })  // Added role column with default value
+  @Column({ default: 'user' })
   role: string;
+
+  @Column({ default: false })
+  isEmailVerified: boolean;
+
+  @Column({ nullable: true })
+  verificationToken: string;
+
+  @Column({ nullable: true })
+  verificationTokenExpiry: Date;
 
   @OneToMany(() => Feedback, feedback => feedback.user, { eager: false })
   feedbacks: Feedback[];
@@ -28,10 +37,8 @@ export class User {
   @OneToMany(() => Booking, booking => booking.user, { eager: false })
   bookings: Booking[];
 
-  
-
   toJSON() {
-    const { password, ...userWithoutPassword } = this;
+    const { password, verificationToken, verificationTokenExpiry, ...userWithoutPassword } = this;
     return userWithoutPassword;
   }
 }

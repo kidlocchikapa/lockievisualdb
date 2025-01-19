@@ -15,7 +15,7 @@ const feedback_entity_1 = require("./feedback.entity");
 const bookings_entity_1 = require("./bookings.entity");
 let User = class User {
     toJSON() {
-        const { password, ...userWithoutPassword } = this;
+        const { password, verificationToken, verificationTokenExpiry, ...userWithoutPassword } = this;
         return userWithoutPassword;
     }
 };
@@ -44,6 +44,18 @@ __decorate([
     (0, typeorm_1.Column)({ default: 'user' }),
     __metadata("design:type", String)
 ], User.prototype, "role", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], User.prototype, "isEmailVerified", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "verificationToken", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
+], User.prototype, "verificationTokenExpiry", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => feedback_entity_1.Feedback, feedback => feedback.user, { eager: false }),
     __metadata("design:type", Array)

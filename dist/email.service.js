@@ -144,6 +144,30 @@ let EmailService = EmailService_1 = class EmailService {
       `,
         });
     }
+    async sendVerificationEmail(email, token) {
+        const appUrl = this.configService.get('APP_URL');
+        const verificationUrl = `${appUrl}/verify-email?token=${token}`;
+        await this.sendEmail({
+            to: email,
+            subject: 'Verify Your Email - Lockie Visuals',
+            html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Welcome to Lockie Visuals!</h2>
+          <p>Thank you for registering. Please verify your email address to complete your registration.</p>
+          
+          ${this.getActionButton('Verify Email', verificationUrl)}
+          
+          <p style="margin-top: 20px; color: #666;">
+            If the button doesn't work, copy and paste this link in your browser:<br>
+            ${verificationUrl}
+          </p>
+          <p style="color: #666;">
+            This verification link will expire in 24 hours.
+          </p>
+        </div>
+      `,
+        });
+    }
     async sendBookingUpdateNotification(booking) {
         const appUrl = this.configService.get('APP_URL');
         const viewBookingUrl = `${appUrl}/bookings/${booking.id}`;

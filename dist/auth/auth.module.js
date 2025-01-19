@@ -16,6 +16,7 @@ const auth_controller_1 = require("./auth.controller");
 const auth_service_1 = require("./auth.service");
 const user_entity_1 = require("../entities/user.entity");
 const jwt_strategy_1 = require("./jwt.strategy");
+const email_module_1 = require("../email.module");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -31,6 +32,7 @@ exports.AuthModule = AuthModule = __decorate([
                     signOptions: { expiresIn: '1h' },
                 }),
             }),
+            email_module_1.EmailModule,
         ],
         controllers: [auth_controller_1.AuthController],
         providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy],
