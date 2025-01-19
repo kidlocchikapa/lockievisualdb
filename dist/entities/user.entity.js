@@ -15,8 +15,8 @@ const feedback_entity_1 = require("./feedback.entity");
 const bookings_entity_1 = require("./bookings.entity");
 let User = class User {
     toJSON() {
-        const { password, verificationToken, verificationTokenExpiry, ...userWithoutPassword } = this;
-        return userWithoutPassword;
+        const { password, verificationToken, verificationTokenExpiry, ...userWithoutSensitiveData } = this;
+        return userWithoutSensitiveData;
     }
 };
 exports.User = User;
@@ -37,7 +37,7 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "phoneNumber", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ select: false }),
     __metadata("design:type", String)
 ], User.prototype, "password", void 0);
 __decorate([
@@ -53,15 +53,29 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "verificationToken", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
     __metadata("design:type", Date)
 ], User.prototype, "verificationTokenExpiry", void 0);
 __decorate([
-    (0, typeorm_1.OneToMany)(() => feedback_entity_1.Feedback, feedback => feedback.user, { eager: false }),
+    (0, typeorm_1.CreateDateColumn)(),
+    __metadata("design:type", Date)
+], User.prototype, "createdAt", void 0);
+__decorate([
+    (0, typeorm_1.UpdateDateColumn)(),
+    __metadata("design:type", Date)
+], User.prototype, "updatedAt", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => feedback_entity_1.Feedback, feedback => feedback.user, {
+        eager: false,
+        cascade: true
+    }),
     __metadata("design:type", Array)
 ], User.prototype, "feedbacks", void 0);
 __decorate([
-    (0, typeorm_1.OneToMany)(() => bookings_entity_1.Booking, booking => booking.user, { eager: false }),
+    (0, typeorm_1.OneToMany)(() => bookings_entity_1.Booking, booking => booking.user, {
+        eager: false,
+        cascade: true
+    }),
     __metadata("design:type", Array)
 ], User.prototype, "bookings", void 0);
 exports.User = User = __decorate([

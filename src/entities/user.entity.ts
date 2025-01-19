@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Feedback } from './feedback.entity';
 import { Booking } from './bookings.entity';
 
@@ -16,7 +16,7 @@ export class User {
   @Column()
   phoneNumber: string;
 
-  @Column()
+  @Column({ select: false }) // This ensures password isn't loaded by default
   password: string;
 
   @Column({ default: 'user' })
@@ -28,17 +28,35 @@ export class User {
   @Column({ nullable: true })
   verificationToken: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   verificationTokenExpiry: Date;
 
-  @OneToMany(() => Feedback, feedback => feedback.user, { eager: false })
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @OneToMany(() => Feedback, feedback => feedback.user, { 
+    eager: false,
+    cascade: true 
+  })
   feedbacks: Feedback[];
 
-  @OneToMany(() => Booking, booking => booking.user, { eager: false })
+  @OneToMany(() => Booking, booking => booking.user, { 
+    eager: false,
+    cascade: true
+  })
   bookings: Booking[];
 
+  // Method to remove sensitive data when converting to JSON
   toJSON() {
-    const { password, verificationToken, verificationTokenExpiry, ...userWithoutPassword } = this;
-    return userWithoutPassword;
+    const { 
+      password, 
+      verificationToken, 
+      verificationTokenExpiry, 
+      ...userWithoutSensitiveData 
+    } = this;
+    return userWithoutSensitiveData;
   }
 }
