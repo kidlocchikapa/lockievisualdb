@@ -211,7 +211,7 @@ export class EmailService {
           <p>Your booking has been cancelled.</p>
           <p>Booking Details:</p>
           <ul>
-            <li>Booking ID: ${booking.id}</li>
+            <li>Booking ID: ${booking.id}</li>3
             <li>Service: ${booking.serviceName}</li>
             <li>Cancellation Date: ${new Date().toLocaleDateString()}</li>
           </ul>
