@@ -70,8 +70,9 @@ export class EmailService {
 
   async sendBookingNotification(booking: Booking): Promise<void> {
     const appUrl = this.configService.get('APP_URL');
-    const confirmUrl = `${appUrl}/admin/bookings/confirm/${booking.id}`;
-    const rejectUrl = `${appUrl}/admin/bookings/reject/${booking.id}`;
+    // Updated URL pattern to match /admin/bookings/{id}/{action}
+    const confirmUrl = `${appUrl}/admin/bookings/${booking.id}/confirm`;
+    const rejectUrl = `${appUrl}/admin/bookings/${booking.id}/cancel`;
 
     await this.sendEmail({
       to: 'kidloc24chikapa@gmail.com',
@@ -102,7 +103,8 @@ export class EmailService {
 
   async sendBookingConfirmedNotification(booking: Booking): Promise<void> {
     const appUrl = this.configService.get('APP_URL');
-    const viewBookingUrl = `${appUrl}/bookings/${booking.id}`;
+    // Updated booking view URL to match the pattern
+    const viewBookingUrl = `${appUrl}/admin/bookings/${booking.id}/view`;
 
     await this.sendEmail({
       to: booking.userEmail,
@@ -128,6 +130,9 @@ export class EmailService {
   }
 
   async sendServiceDeliveredNotification(booking: Booking): Promise<void> {
+    const appUrl = this.configService.get('APP_URL');
+    const viewBookingUrl = `${appUrl}/admin/bookings/${booking.id}/view`;
+
     await this.sendEmail({
       to: booking.userEmail,
       subject: 'Service Delivered - Lockie Visuals',
@@ -142,14 +147,19 @@ export class EmailService {
             <li>Service: ${booking.serviceName}</li>
             <li>Status: Delivered</li>
           </ul>
+          
+          ${this.getActionButton('View Service Details', viewBookingUrl)}
+          
           <p>Thank you for choosing Lockie Visuals. We hope you're satisfied with our service!</p>
         </div>
       `,
     });
   }
+
   async sendVerificationEmail(email: string, token: string): Promise<void> {
     const appUrl = this.configService.get('APP_URL');
-    const verificationUrl = `${appUrl}/verify-email?token=${token}`;
+    // Updated verification URL to follow similar pattern
+    const verificationUrl = `${appUrl}/auth/verify-email/${token}`;
 
     await this.sendEmail({
       to: email,
@@ -175,7 +185,8 @@ export class EmailService {
 
   async sendBookingUpdateNotification(booking: Booking): Promise<void> {
     const appUrl = this.configService.get('APP_URL');
-    const viewBookingUrl = `${appUrl}/bookings/${booking.id}`;
+    // Updated booking view URL
+    const viewBookingUrl = `${appUrl}/admin/bookings/${booking.id}/view`;
 
     await this.sendEmail({
       to: booking.userEmail,
@@ -201,6 +212,9 @@ export class EmailService {
   }
 
   async sendBookingCancellationNotification(booking: Booking): Promise<void> {
+    const appUrl = this.configService.get('APP_URL');
+    const viewBookingUrl = `${appUrl}/admin/bookings/${booking.id}/view`;
+
     await this.sendEmail({
       to: booking.userEmail,
       subject: 'Booking Cancelled',
@@ -211,10 +225,13 @@ export class EmailService {
           <p>Your booking has been cancelled.</p>
           <p>Booking Details:</p>
           <ul>
-            <li>Booking ID: ${booking.id}</li>3
+            <li>Booking ID: ${booking.id}</li>
             <li>Service: ${booking.serviceName}</li>
             <li>Cancellation Date: ${new Date().toLocaleDateString()}</li>
           </ul>
+          
+          ${this.getActionButton('View Booking Details', viewBookingUrl)}
+          
           <p>If you didn't request this cancellation or have any questions, please contact us immediately.</p>
           <p>We hope to serve you again in the future.</p>
         </div>
