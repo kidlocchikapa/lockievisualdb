@@ -159,9 +159,8 @@ export class EmailService {
   async sendVerificationEmail(email: string, token: string): Promise<void> {
     const appUrl = this.configService.get('APP_URL');
     // Updated verification URL to follow similar pattern
-    const verificationUrl = `${appUrl}/auth/verify-email/${token}`;
-
-    await this.sendEmail({
+    const verificationUrl = `${appUrl}/auth/verify-email?token=${token}`;
+  await this.sendEmail({
       to: email,
       subject: 'Verify Your Email - Lockie Visuals',
       html: `
