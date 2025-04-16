@@ -35,7 +35,7 @@ import { ContactController } from './contact/contact.controller';
       envFilePath: ['.env', '.env.development', '.env.production'],
     }),
 
-    // Database connection
+    // Database connection (Neon or local based on NODE_ENV)
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -58,12 +58,6 @@ import { ContactController } from './contact/contact.controller';
             url: configService.get<string>('DATABASE_URL'),
             ssl: {
               rejectUnauthorized: false,
-            },
-            pool: {
-              min: 2,
-              max: 20,
-              idleTimeoutMillis: 30000,
-              acquireTimeoutMillis: 20000,
             },
           };
         }
@@ -122,7 +116,7 @@ import { ContactController } from './contact/contact.controller';
   ],
   controllers: [ContactController],
   providers: [
-    EmailService, 
+    EmailService,
     ContactService,
     {
       provide: APP_INTERCEPTOR,
