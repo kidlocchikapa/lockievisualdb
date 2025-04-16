@@ -9,7 +9,7 @@ export class User {
   @PrimaryGeneratedColumn('increment')
   id: number;
 
-  @Column()
+  @Column({name: 'full-name'})
   fullName: string;
 
   @Column({ unique: true })
