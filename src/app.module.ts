@@ -1,12 +1,15 @@
-// app.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ClassSerializerInterceptor } from '@nestjs/common';
+
 import { LoggerOptions } from 'typeorm';
+
+import * as entities from './entities'; // Ensure these are all classes (not objects/functions)
 
 // Modules
 import { AuthModule } from './auth/auth.module';
@@ -14,18 +17,11 @@ import { FeedbackModule } from './feedback/feedback.module';
 import { BookingModule } from './bookings/bookings.module';
 import { AdminModule } from './admin/admin.module';
 
-// Entities
-import { User } from './entities/user.entity';
-import { Feedback } from './entities/feedback.entity';
-import { Booking } from './entities/bookings.entity';
-import { Contact } from './entities/contact.entity';
-
-// Services
+// Services and Controllers
 import { EmailService } from './email.service';
 import { ContactService } from './contact/contact.service';
-
-// Controllers
 import { ContactController } from './contact/contact.controller';
+import { Contact } from './entities/contact.entity';
 
 @Module({
   imports: [
@@ -35,7 +31,6 @@ import { ContactController } from './contact/contact.controller';
       envFilePath: ['.env', '.env.development', '.env.production'],
     }),
 
-    // Database connection (Neon or local based on NODE_ENV)
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -45,9 +40,11 @@ import { ContactController } from './contact/contact.controller';
         const baseConfig = {
           type: 'postgres' as const,
           logging: isProduction ? ['error'] as LoggerOptions : true,
-          entities: [User, Feedback, Booking, Contact],
+          entities: Object.values(entities) as (Function | string)[],
           autoLoadEntities: true,
-          synchronize: !isProduction,
+          synchronize: !isProduction && !configService.get<boolean>('DB_MIGRATIONS'),
+          migrations: ['dist/migrations/*.js'],
+          migrationsRun: configService.get<boolean>('DB_MIGRATIONS', false),
           retryAttempts: 3,
           retryDelay: 3000,
         };
@@ -59,6 +56,8 @@ import { ContactController } from './contact/contact.controller';
             ssl: {
               rejectUnauthorized: false,
             },
+            migrationsRun: true,
+            synchronize: false,
           };
         }
 
@@ -73,7 +72,6 @@ import { ContactController } from './contact/contact.controller';
       },
     }),
 
-    // Mailer configuration
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -105,16 +103,18 @@ import { ContactController } from './contact/contact.controller';
       }),
     }),
 
-    // Feature modules
+    // App feature modules
     AuthModule,
     FeedbackModule,
     BookingModule,
     AdminModule,
 
-    // Entity modules
+    // Single entity for contact module
     TypeOrmModule.forFeature([Contact]),
   ],
+
   controllers: [ContactController],
+
   providers: [
     EmailService,
     ContactService,
@@ -123,6 +123,7 @@ import { ContactController } from './contact/contact.controller';
       useClass: ClassSerializerInterceptor,
     },
   ],
+
   exports: [EmailService],
 })
 export class AppModule {}
