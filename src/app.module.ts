@@ -57,7 +57,7 @@ import { Contact } from './entities/contact.entity';
               rejectUnauthorized: false,
             },
             migrationsRun: true,
-            synchronize: false,
+            synchronize: true,
           };
         }
 
