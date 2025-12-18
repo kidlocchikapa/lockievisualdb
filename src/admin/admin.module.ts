@@ -7,6 +7,8 @@ import { EmailModule } from '../email.module';
 import { Booking } from '../entities/bookings.entity';
 import { User } from '../entities/user.entity';
 import { ConfigModule } from '@nestjs/config';
+import { FeedbackModule } from '../feedback/feedback.module';
+import { ContactModule } from '../contact/contact.module';
 
 @Module({
   imports: [
@@ -14,8 +16,10 @@ import { ConfigModule } from '@nestjs/config';
     TypeOrmModule.forFeature([Booking, User]),
     BookingModule,
     AuthModule,
-    EmailModule, // This will bring in the configured EmailService
+    EmailModule,
+    FeedbackModule,
+    ContactModule,
   ],
   controllers: [AdminController],
 })
-export class AdminModule {}
+export class AdminModule { }

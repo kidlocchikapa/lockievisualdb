@@ -9,7 +9,7 @@ export class User {
   @PrimaryGeneratedColumn('increment')
   id: number;
 
-  @Column({name: 'full-name'})
+  @Column({ name: 'full-name' })
   fullName: string;
 
   @Column({ unique: true })
@@ -36,6 +36,14 @@ export class User {
   @Exclude({ toPlainOnly: true })
   verificationTokenExpiry: Date;
 
+  @Column({ nullable: true })
+  @Exclude({ toPlainOnly: true })
+  resetPasswordToken: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  @Exclude({ toPlainOnly: true })
+  resetPasswordExpiry: Date;
+
   @CreateDateColumn()
   @Transform(({ value }) => value.toISOString())
   createdAt: Date;
@@ -44,13 +52,13 @@ export class User {
   @Transform(({ value }) => value.toISOString())
   updatedAt: Date;
 
-  @OneToMany(() => Feedback, feedback => feedback.user, { 
+  @OneToMany(() => Feedback, feedback => feedback.user, {
     eager: false,
-    cascade: true 
+    cascade: true
   })
   feedbacks: Feedback[];
 
-  @OneToMany(() => Booking, booking => booking.user, { 
+  @OneToMany(() => Booking, booking => booking.user, {
     eager: false,
     cascade: true
   })

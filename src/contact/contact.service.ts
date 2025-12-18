@@ -12,7 +12,7 @@ export class ContactService {
     @InjectRepository(Contact)
     private contactRepository: Repository<Contact>,
     private emailService: EmailService,
-  ) {}
+  ) { }
 
   async create(createContactDto: CreateContactDto): Promise<Contact> {
     const contact = this.contactRepository.create(createContactDto);
@@ -25,5 +25,13 @@ export class ContactService {
     return this.contactRepository.find({
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async markAsRead(id: number) {
+    return await this.contactRepository.update(id, { isRead: true });
+  }
+
+  async getUnreadCount() {
+    return await this.contactRepository.count({ where: { isRead: false } });
   }
 }

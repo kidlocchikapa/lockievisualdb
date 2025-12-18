@@ -1,4 +1,4 @@
-import { 
+import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
@@ -35,6 +35,9 @@ export class Booking {
 
   @Column({ type: 'jsonb', nullable: true })
   additionalDetails: Record<string, any>;
+
+  @Column({ default: false })
+  isRead: boolean;
 
   @CreateDateColumn()
   createdAt: Date;

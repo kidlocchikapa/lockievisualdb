@@ -3,7 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { MailerModule } from '@nestjs-modules/mailer';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ClassSerializerInterceptor } from '@nestjs/common';
 
@@ -16,12 +15,11 @@ import { AuthModule } from './auth/auth.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { BookingModule } from './bookings/bookings.module';
 import { AdminModule } from './admin/admin.module';
+import { BlogModule } from './blog/blog.module';
 
 // Services and Controllers
-import { EmailService } from './email.service';
-import { ContactService } from './contact/contact.service';
-import { ContactController } from './contact/contact.controller';
-import { Contact } from './entities/contact.entity';
+import { EmailModule } from './email.module';
+import { ContactModule } from './contact/contact.module';
 
 @Module({
   imports: [
@@ -72,58 +70,27 @@ import { Contact } from './entities/contact.entity';
       },
     }),
 
-    MailerModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        transport: {
-          service: 'gmail',
-          host: 'smtp.gmail.com',
-          port: 465,
-          secure: true,
-          auth: {
-            user: configService.get<string>('EMAIL_USER'),
-            pass: configService.get<string>('EMAIL_PASSWORD'),
-          },
-          tls: {
-            rejectUnauthorized: true,
-          },
-        },
-        defaults: {
-          from: `"Lockie Visuals" <${configService.get('EMAIL_USER')}>`,
-        },
-        template: {
-          dir: process.cwd() + '/templates',
-          adapter: new HandlebarsAdapter(),
-          options: {
-            strict: false,
-          },
-        },
-        preview: configService.get('NODE_ENV') !== 'production',
-      }),
-    }),
+    EmailModule,
 
     // App feature modules
     AuthModule,
     FeedbackModule,
     BookingModule,
     AdminModule,
+    BlogModule,
+    ContactModule,
 
     // Single entity for contact module
-    TypeOrmModule.forFeature([Contact]),
   ],
 
-  controllers: [ContactController],
+  controllers: [],
 
   providers: [
-    EmailService,
-    ContactService,
     {
       provide: APP_INTERCEPTOR,
       useClass: ClassSerializerInterceptor,
     },
   ],
 
-  exports: [EmailService],
 })
-export class AppModule {}
+export class AppModule { }

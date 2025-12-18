@@ -10,6 +10,15 @@ export class Feedback {
   @Column()
   content: string;
 
+  @Column({ nullable: true })
+  adminResponse: string;
+
+  @Column({ default: false })
+  isRead: boolean;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
+
   @ManyToOne(() => User, user => user.feedbacks)
   user: User;
 }

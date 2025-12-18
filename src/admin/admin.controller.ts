@@ -1,17 +1,23 @@
-import { Controller, Post, Get, Param, UseGuards, HttpException, HttpStatus, ParseIntPipe } from '@nestjs/common';
+import { Controller, Post, Get, Param, UseGuards, HttpException, HttpStatus, ParseIntPipe, Body } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt.auth-guard';
 import { RolesGuard } from '../auth/roles.guards'
-import { Roles } from '../auth/roles.decolator';
+import { Roles, UserRole } from '../decolators';
 import { BookingService } from '../bookings/bookings.service';
 import { BookingStatus } from '../entities/bookings.entity';
+import { FeedbackService } from '../feedback/feedback.service';
+import { ContactService } from '../contact/contact.service';
+import { EmailService } from '../email.service';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@Roles(UserRole.ADMIN)
 export class AdminController {
   constructor(
     private readonly bookingService: BookingService,
-  ) {}
+    private readonly feedbackService: FeedbackService,
+    private readonly contactService: ContactService,
+    private readonly emailService: EmailService,
+  ) { }
 
   @Get('bookings')
   async getAllBookings() {
@@ -26,10 +32,59 @@ export class AdminController {
     }
   }
 
+  @Get('contacts')
+  async getAllContacts() {
+    try {
+      return await this.contactService.findAll();
+    } catch (error) {
+      throw new HttpException('Failed to fetch contacts', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Get('feedback')
+  async getAllFeedback() {
+    try {
+      return await this.feedbackService.findAll();
+    } catch (error) {
+      throw new HttpException('Failed to fetch feedback', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post('feedback/:id/respond')
+  async respondToFeedback(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('response') response: string
+  ) {
+    try {
+      const feedback = await this.feedbackService.respond(id, response);
+      if (feedback.user && feedback.user.email) {
+        await this.emailService.sendFeedbackResponseEmail(
+          feedback.user.email,
+          feedback.content,
+          response
+        );
+      }
+      return feedback;
+    } catch (error) {
+      throw new HttpException(error.message || 'Failed to respond to feedback', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Get('stats/unread')
+  async getUnreadCounts() {
+    try {
+      const bookings = await this.bookingService.getUnreadCounts();
+      const feedback = await this.feedbackService.getUnreadCount();
+      const contacts = await this.contactService.getUnreadCount();
+      return { bookings, feedback, contacts, total: bookings + feedback + contacts };
+    } catch (error) {
+      throw new HttpException('Failed to fetch unread stats', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   @Post('bookings/:id/confirm')
   async confirmBooking(@Param('id', ParseIntPipe) id: number) {
     try {
-      // The existing confirmBooking method already handles email notifications
       const confirmedBooking = await this.bookingService.confirmBooking(id);
       return confirmedBooking;
     } catch (error) {
@@ -46,7 +101,6 @@ export class AdminController {
   @Post('bookings/:id/reject')
   async rejectBooking(@Param('id', ParseIntPipe) id: number) {
     try {
-      // Using cancelBooking since it's the equivalent in your service
       const rejectedBooking = await this.bookingService.cancelBooking(id);
       return rejectedBooking;
     } catch (error) {
@@ -63,7 +117,6 @@ export class AdminController {
   @Post('bookings/:id/deliver')
   async markBookingDelivered(@Param('id', ParseIntPipe) id: number) {
     try {
-      // The existing markAsDelivered method already handles email notifications
       const deliveredBooking = await this.bookingService.markAsDelivered(id);
       return deliveredBooking;
     } catch (error) {
@@ -77,7 +130,6 @@ export class AdminController {
     }
   }
 
-  // Additional endpoint to get a specific booking's details
   @Get('bookings/:id')
   async getBookingDetails(@Param('id', ParseIntPipe) id: number) {
     try {
@@ -92,5 +144,20 @@ export class AdminController {
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  @Post('bookings/:id/read')
+  async markBookingRead(@Param('id', ParseIntPipe) id: number) {
+    return await this.bookingService.markAsRead(id);
+  }
+
+  @Post('contacts/:id/read')
+  async markContactRead(@Param('id', ParseIntPipe) id: number) {
+    return await this.contactService.markAsRead(id);
+  }
+
+  @Post('feedback/:id/read')
+  async markFeedbackRead(@Param('id', ParseIntPipe) id: number) {
+    return await this.feedbackService.markAsRead(id);
   }
 }

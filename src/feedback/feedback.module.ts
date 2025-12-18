@@ -10,5 +10,6 @@ import { User } from '../entities/user.entity';
   imports: [TypeOrmModule.forFeature([Feedback, User])],
   controllers: [FeedbackController],
   providers: [FeedbackService],
+  exports: [FeedbackService]
 })
-export class FeedbackModule {}
+export class FeedbackModule { }

@@ -13,7 +13,7 @@ export class BookingService {
     @InjectRepository(Booking)
     private bookingRepository: Repository<Booking>,
     private emailService: EmailService,
-  ) {}
+  ) { }
 
   async createBooking(bookingData: CreateBookingDto, user: User): Promise<Booking> {
     const booking = this.bookingRepository.create({
@@ -53,7 +53,7 @@ export class BookingService {
     if (updateBookingDto.serviceName) {
       booking.serviceName = updateBookingDto.serviceName;
     }
-    
+
     if (updateBookingDto.additionalDetails) {
       booking.additionalDetails = {
         ...booking.additionalDetails,
@@ -172,5 +172,13 @@ export class BookingService {
       relations: ['user'],
       order: { createdAt: 'DESC' }
     });
+  }
+
+  async markAsRead(id: number) {
+    return await this.bookingRepository.update(id, { isRead: true });
+  }
+
+  async getUnreadCounts() {
+    return await this.bookingRepository.count({ where: { isRead: false } });
   }
 }

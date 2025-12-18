@@ -18,6 +18,9 @@ export class Contact {
   @Column('text')
   message: string;
 
+  @Column({ default: false })
+  isRead: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 }

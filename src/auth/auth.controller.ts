@@ -1,10 +1,10 @@
 // auth.controller.ts
-import { 
-  Controller, 
-  Post, 
-  Body, 
-  Get, 
-  Query, 
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Query,
   UnauthorizedException,
   Logger,
   HttpCode,
@@ -18,7 +18,7 @@ import { LoginDto } from '../dto/login.dto';
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
@@ -62,5 +62,17 @@ export class AuthController {
       this.logger.error(`Resend verification failed: ${error.message}`, error.stack);
       throw error;
     }
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body('email') email: string) {
+    return await this.authService.forgotPassword(email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body('token') token: string, @Body('newPassword') newPassword: string) {
+    return await this.authService.resetPassword(token, newPassword);
   }
 }

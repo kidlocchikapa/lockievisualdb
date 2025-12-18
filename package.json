@@ -9,10 +9,9 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "prebuild": "rm -rf dist",
     "build": "nest build",
     "start": "npm run start:prod",
-    "start:dev": "nest start --watch",
+    "start:dev": "npm run build && node dist/main",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "clean": "rm -rf dist tsconfig*.tsbuildinfo",
