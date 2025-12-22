@@ -12,7 +12,7 @@ async function bootstrap() {
   app.enableCors({
     origin: (origin, callback) => {
       // Allow any localhost origin (including subdomains) or the production app
-      if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1') || origin === 'https://lockievisuals.vercel.app') {
+      if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1') || origin === 'https://lockievisuals.vercel.app' || origin.includes('onrender.com')) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
