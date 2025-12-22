@@ -12,7 +12,14 @@ export enum BookingStatus {
   PENDING = 'PENDING',
   CONFIRMED = 'CONFIRMED',
   CANCELLED = 'CANCELLED',
-  DELIVERED = 'DELIVERED'  // Added this status
+  DELIVERED = 'DELIVERED'
+}
+
+export enum PaymentStatus {
+  PENDING = 'PENDING',
+  PARTIAL = 'PARTIAL', // 50% deposit paid
+  PAID = 'PAID',
+  FAILED = 'FAILED'
 }
 
 @Entity()
@@ -38,6 +45,22 @@ export class Booking {
 
   @Column({ default: false })
   isRead: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: PaymentStatus,
+    default: PaymentStatus.PENDING
+  })
+  paymentStatus: PaymentStatus;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  amountPaid: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  totalAmount: number; // To calculate the 50%
+
+  @Column({ nullable: true })
+  transactionReference: string;
 
   @CreateDateColumn()
   createdAt: Date;

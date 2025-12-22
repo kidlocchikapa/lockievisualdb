@@ -22,6 +22,8 @@ const admin_module_1 = require("./admin/admin.module");
 const blog_module_1 = require("./blog/blog.module");
 const email_module_1 = require("./email.module");
 const contact_module_1 = require("./contact/contact.module");
+const service_module_1 = require("./service/service.module");
+const payment_module_1 = require("./payment/payment.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -81,6 +83,8 @@ exports.AppModule = AppModule = __decorate([
             admin_module_1.AdminModule,
             blog_module_1.BlogModule,
             contact_module_1.ContactModule,
+            service_module_1.ServiceModule,
+            payment_module_1.PaymentModule,
         ],
         controllers: [],
         providers: [

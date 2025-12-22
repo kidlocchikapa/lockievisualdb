@@ -24,11 +24,13 @@ let BookingService = class BookingService {
         this.emailService = emailService;
     }
     async createBooking(bookingData, user) {
+        const totalAmount = bookingData.additionalDetails?.price || 0;
         const booking = this.bookingRepository.create({
             serviceName: bookingData.serviceName,
             userEmail: user.email,
             status: bookings_entity_1.BookingStatus.PENDING,
             user: user,
+            totalAmount: Number(totalAmount),
             additionalDetails: bookingData.additionalDetails || {}
         });
         const savedBooking = await this.bookingRepository.save(booking);

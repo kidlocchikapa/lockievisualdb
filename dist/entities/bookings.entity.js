@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Booking = exports.BookingStatus = void 0;
+exports.Booking = exports.PaymentStatus = exports.BookingStatus = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("./user.entity");
 var BookingStatus;
@@ -19,6 +19,13 @@ var BookingStatus;
     BookingStatus["CANCELLED"] = "CANCELLED";
     BookingStatus["DELIVERED"] = "DELIVERED";
 })(BookingStatus || (exports.BookingStatus = BookingStatus = {}));
+var PaymentStatus;
+(function (PaymentStatus) {
+    PaymentStatus["PENDING"] = "PENDING";
+    PaymentStatus["PARTIAL"] = "PARTIAL";
+    PaymentStatus["PAID"] = "PAID";
+    PaymentStatus["FAILED"] = "FAILED";
+})(PaymentStatus || (exports.PaymentStatus = PaymentStatus = {}));
 let Booking = class Booking {
     toJSON() {
         const booking = { ...this };
@@ -54,6 +61,26 @@ __decorate([
     (0, typeorm_1.Column)({ default: false }),
     __metadata("design:type", Boolean)
 ], Booking.prototype, "isRead", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'enum',
+        enum: PaymentStatus,
+        default: PaymentStatus.PENDING
+    }),
+    __metadata("design:type", String)
+], Booking.prototype, "paymentStatus", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], Booking.prototype, "amountPaid", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], Booking.prototype, "totalAmount", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Booking.prototype, "transactionReference", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

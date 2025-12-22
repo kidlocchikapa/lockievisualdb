@@ -22,6 +22,8 @@ import { BlogModule } from './blog/blog.module';
 // Services and Controllers
 import { EmailModule } from './email.module';
 import { ContactModule } from './contact/contact.module';
+import { ServiceModule } from './service/service.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -86,6 +88,8 @@ import { ContactModule } from './contact/contact.module';
     AdminModule,
     BlogModule,
     ContactModule,
+    ServiceModule,
+    PaymentModule,
 
     // Single entity for contact module
   ],

@@ -16,11 +16,15 @@ export class BookingService {
   ) { }
 
   async createBooking(bookingData: CreateBookingDto, user: User): Promise<Booking> {
+    // Extract price from additionalDetails if available
+    const totalAmount = bookingData.additionalDetails?.price || 0;
+
     const booking = this.bookingRepository.create({
       serviceName: bookingData.serviceName,
       userEmail: user.email,
       status: BookingStatus.PENDING,
       user: user,
+      totalAmount: Number(totalAmount),
       additionalDetails: bookingData.additionalDetails || {}
     });
 
