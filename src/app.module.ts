@@ -9,6 +9,8 @@ import { ClassSerializerInterceptor } from '@nestjs/common';
 import { LoggerOptions } from 'typeorm';
 
 import * as entities from './entities'; // Ensure these are all classes (not objects/functions)
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 // Modules
 import { AuthModule } from './auth/auth.module';
@@ -27,6 +29,11 @@ import { ContactModule } from './contact/contact.module';
       isGlobal: true,
       cache: true,
       envFilePath: ['.env', '.env.development', '.env.production'],
+    }),
+
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
     }),
 
     TypeOrmModule.forRootAsync({

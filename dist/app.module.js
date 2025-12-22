@@ -13,6 +13,8 @@ const config_1 = require("@nestjs/config");
 const core_1 = require("@nestjs/core");
 const common_2 = require("@nestjs/common");
 const entities = require("./entities");
+const serve_static_1 = require("@nestjs/serve-static");
+const path_1 = require("path");
 const auth_module_1 = require("./auth/auth.module");
 const feedback_module_1 = require("./feedback/feedback.module");
 const bookings_module_1 = require("./bookings/bookings.module");
@@ -30,6 +32,10 @@ exports.AppModule = AppModule = __decorate([
                 isGlobal: true,
                 cache: true,
                 envFilePath: ['.env', '.env.development', '.env.production'],
+            }),
+            serve_static_1.ServeStaticModule.forRoot({
+                rootPath: (0, path_1.join)(__dirname, '..', 'uploads'),
+                serveRoot: '/uploads',
             }),
             typeorm_1.TypeOrmModule.forRootAsync({
                 imports: [config_1.ConfigModule],

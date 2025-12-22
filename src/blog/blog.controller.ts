@@ -6,19 +6,37 @@ import {
     Delete,
     Body,
     Param,
-    UseGuards,
     ParseIntPipe,
-    Query
+    Query,
+    UseInterceptors,
+    UploadedFile,
+    UseGuards
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { BlogService } from './blog.service';
 import { Blog } from '../entities/blog.entity';
 import { JwtAuthGuard } from '../auth/jwt.auth-guard';
 import { RolesGuard } from '../auth/roles.guards';
 import { Roles, UserRole } from '../decolators';
+import { CreateBlogDto } from '../dto/create-blog.dto';
+import { UpdateBlogDto } from '../dto/update-blog.dto';
 
 @Controller('blogs')
 export class BlogController {
     constructor(private readonly blogService: BlogService) { }
+
+    private static storageConfig = {
+        storage: diskStorage({
+            destination: './uploads/blogs',
+            filename: (req, file, cb) => {
+                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+                const ext = extname(file.originalname);
+                cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+            },
+        }),
+    };
 
     // Public: Fetch all blogs
     @Get()
@@ -37,7 +55,18 @@ export class BlogController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMIN)
     @Post()
-    async create(@Body() blogData: Partial<Blog>) {
+    @UseInterceptors(FileInterceptor('image', BlogController.storageConfig))
+    async create(
+        @UploadedFile() file: any,
+        @Body() blogData: CreateBlogDto
+    ) {
+        console.log('--- DEBUG START ---');
+        console.log('File:', file ? file.originalname : 'No File');
+        console.log('Body:', blogData);
+        if (file) {
+            blogData.imageUrl = `/uploads/blogs/${file.filename}`;
+        }
+        // Boolean conversion handled by DTO Transform
         return await this.blogService.create(blogData);
     }
 
@@ -45,7 +74,17 @@ export class BlogController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMIN)
     @Put(':id')
-    async update(@Param('id', ParseIntPipe) id: number, @Body() blogData: Partial<Blog>) {
+
+    @UseInterceptors(FileInterceptor('image', BlogController.storageConfig))
+    async update(
+        @Param('id', ParseIntPipe) id: number,
+        @UploadedFile() file: any,
+        @Body() blogData: UpdateBlogDto
+    ) {
+        if (file) {
+            blogData.imageUrl = `/uploads/blogs/${file.filename}`;
+        }
+        // Boolean conversion handled by DTO Transform
         return await this.blogService.update(id, blogData);
     }
 

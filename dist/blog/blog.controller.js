@@ -14,10 +14,15 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BlogController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
+const multer_1 = require("multer");
+const path_1 = require("path");
 const blog_service_1 = require("./blog.service");
 const jwt_auth_guard_1 = require("../auth/jwt.auth-guard");
 const roles_guards_1 = require("../auth/roles.guards");
 const decolators_1 = require("../decolators");
+const create_blog_dto_1 = require("../dto/create-blog.dto");
+const update_blog_dto_1 = require("../dto/update-blog.dto");
 let BlogController = class BlogController {
     constructor(blogService) {
         this.blogService = blogService;
@@ -29,10 +34,19 @@ let BlogController = class BlogController {
     async findOne(id) {
         return await this.blogService.findOne(id);
     }
-    async create(blogData) {
+    async create(file, blogData) {
+        console.log('--- DEBUG START ---');
+        console.log('File:', file ? file.originalname : 'No File');
+        console.log('Body:', blogData);
+        if (file) {
+            blogData.imageUrl = `/uploads/blogs/${file.filename}`;
+        }
         return await this.blogService.create(blogData);
     }
-    async update(id, blogData) {
+    async update(id, file, blogData) {
+        if (file) {
+            blogData.imageUrl = `/uploads/blogs/${file.filename}`;
+        }
         return await this.blogService.update(id, blogData);
     }
     async remove(id) {
@@ -41,6 +55,16 @@ let BlogController = class BlogController {
     }
 };
 exports.BlogController = BlogController;
+BlogController.storageConfig = {
+    storage: (0, multer_1.diskStorage)({
+        destination: './uploads/blogs',
+        filename: (req, file, cb) => {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+            const ext = (0, path_1.extname)(file.originalname);
+            cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+        },
+    }),
+};
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('onlyPublished')),
@@ -59,19 +83,23 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guards_1.RolesGuard),
     (0, decolators_1.Roles)(decolators_1.UserRole.ADMIN),
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image', BlogController.storageConfig)),
+    __param(0, (0, common_1.UploadedFile)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, create_blog_dto_1.CreateBlogDto]),
     __metadata("design:returntype", Promise)
 ], BlogController.prototype, "create", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guards_1.RolesGuard),
     (0, decolators_1.Roles)(decolators_1.UserRole.ADMIN),
     (0, common_1.Put)(':id'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image', BlogController.storageConfig)),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
-    __param(1, (0, common_1.Body)()),
+    __param(1, (0, common_1.UploadedFile)()),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:paramtypes", [Number, Object, update_blog_dto_1.UpdateBlogDto]),
     __metadata("design:returntype", Promise)
 ], BlogController.prototype, "update", null);
 __decorate([
