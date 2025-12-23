@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Booking, BookingStatus } from '../entities/bookings.entity';
@@ -12,18 +12,44 @@ export class BookingService {
   constructor(
     @InjectRepository(Booking)
     private bookingRepository: Repository<Booking>,
+    @InjectRepository(User) // Added for user management
+    private userRepository: Repository<User>, // Added for user management
     private emailService: EmailService,
   ) { }
 
   async createBooking(bookingData: CreateBookingDto, user: User): Promise<Booking> {
-    // Extract price from additionalDetails if available
-    const totalAmount = bookingData.additionalDetails?.price || 0;
+    // Extract price from additionalDetail
+    let dbUser: User;
 
+    if (user.id === 0) {
+      // Master Admin (ID 0) check - find or create record in DB
+      dbUser = await this.userRepository.findOne({ where: { email: user.email } });
+      if (!dbUser) {
+        // Create master admin record if it doesn't exist
+        dbUser = this.userRepository.create({
+          fullName: 'Lockie Admin',
+          email: user.email,
+          phoneNumber: '00000000',
+          password: 'N/A', // Not used for master admin
+          role: 'admin',
+          isEmailVerified: true
+        });
+        dbUser = await this.userRepository.save(dbUser);
+      }
+    } else {
+      dbUser = await this.userRepository.findOne({ where: { id: user.id } });
+    }
+
+    if (!dbUser) {
+      throw new UnauthorizedException('User record not found in database');
+    }
+
+    const { totalAmount } = bookingData.additionalDetails || { totalAmount: 0 };
     const booking = this.bookingRepository.create({
       serviceName: bookingData.serviceName,
       userEmail: user.email,
       status: BookingStatus.PENDING,
-      user: user,
+      user: dbUser,
       totalAmount: isNaN(Number(totalAmount)) ? 0 : Number(totalAmount),
       additionalDetails: bookingData.additionalDetails || {}
     });
