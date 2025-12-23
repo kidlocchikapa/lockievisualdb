@@ -3,8 +3,21 @@ import { ValidationPipe } from '@nestjs/common';
 import "reflect-metadata";
 import { AppModule } from './app.module';
 import { json } from 'express';
+import * as fs from 'fs';
+import * as path from 'path';
 
 async function bootstrap() {
+  // Ensure upload directories exist
+  const uploadsDir = path.join(process.cwd(), 'uploads');
+  const blogsDir = path.join(uploadsDir, 'blogs');
+
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+  }
+  if (!fs.existsSync(blogsDir)) {
+    fs.mkdirSync(blogsDir);
+  }
+
   const app = await NestFactory.create(AppModule, {
     rawBody: true, // Enable raw body for webhook signature verification
   });

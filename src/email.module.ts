@@ -15,7 +15,7 @@ import * as path from 'path';
         transport: {
           host: configService.get('SMTP_HOST', 'smtp.gmail.com'),
           port: configService.get('SMTP_PORT', 587),
-          secure: configService.get('SMTP_SECURE') === 'true',
+          secure: configService.get('SMTP_SECURE') === 'true', // Usually false for 587, true for 465
           auth: {
             user: configService.get('EMAIL_USER'),
             pass: configService.get('EMAIL_PASSWORD'),
