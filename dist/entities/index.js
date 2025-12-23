@@ -19,5 +19,6 @@ __exportStar(require("./bookings.entity"), exports);
 __exportStar(require("./feedback.entity"), exports);
 __exportStar(require("./contact.entity"), exports);
 __exportStar(require("./blog.entity"), exports);
+__exportStar(require("./blog-review.entity"), exports);
 __exportStar(require("./service.entity"), exports);
 //# sourceMappingURL=index.js.map

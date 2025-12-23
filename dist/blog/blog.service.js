@@ -16,10 +16,11 @@ exports.BlogService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
-const blog_entity_1 = require("../entities/blog.entity");
+const entities_1 = require("../entities");
 let BlogService = class BlogService {
-    constructor(blogRepository) {
+    constructor(blogRepository, reviewRepository) {
         this.blogRepository = blogRepository;
+        this.reviewRepository = reviewRepository;
     }
     async create(blogData) {
         const blog = this.blogRepository.create(blogData);
@@ -29,11 +30,15 @@ let BlogService = class BlogService {
         const where = onlyPublished ? { isPublished: true } : {};
         return await this.blogRepository.find({
             where,
+            relations: ['reviews'],
             order: { createdAt: 'DESC' },
         });
     }
     async findOne(id) {
-        const blog = await this.blogRepository.findOne({ where: { id } });
+        const blog = await this.blogRepository.findOne({
+            where: { id },
+            relations: ['reviews']
+        });
         if (!blog) {
             throw new common_1.NotFoundException(`Blog with ID ${id} not found`);
         }
@@ -48,11 +53,21 @@ let BlogService = class BlogService {
         const blog = await this.findOne(id);
         await this.blogRepository.remove(blog);
     }
+    async addReview(blogId, reviewData) {
+        const blog = await this.findOne(blogId);
+        const review = this.reviewRepository.create({
+            ...reviewData,
+            blogId: blog.id,
+        });
+        return await this.reviewRepository.save(review);
+    }
 };
 exports.BlogService = BlogService;
 exports.BlogService = BlogService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, typeorm_1.InjectRepository)(blog_entity_1.Blog)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(0, (0, typeorm_1.InjectRepository)(entities_1.Blog)),
+    __param(1, (0, typeorm_1.InjectRepository)(entities_1.BlogReview)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository])
 ], BlogService);
 //# sourceMappingURL=blog.service.js.map

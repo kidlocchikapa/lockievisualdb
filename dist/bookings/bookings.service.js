@@ -18,23 +18,51 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const bookings_entity_1 = require("../entities/bookings.entity");
 const email_service_1 = require("../email.service");
+const user_entity_1 = require("../entities/user.entity");
 let BookingService = class BookingService {
-    constructor(bookingRepository, emailService) {
+    constructor(bookingRepository, userRepository, emailService) {
         this.bookingRepository = bookingRepository;
+        this.userRepository = userRepository;
         this.emailService = emailService;
     }
     async createBooking(bookingData, user) {
-        const totalAmount = bookingData.additionalDetails?.price || 0;
+        let dbUser;
+        if (user.id === 0) {
+            dbUser = await this.userRepository.findOne({ where: { email: user.email } });
+            if (!dbUser) {
+                dbUser = this.userRepository.create({
+                    fullName: 'Lockie Admin',
+                    email: user.email,
+                    phoneNumber: '00000000',
+                    password: 'N/A',
+                    role: 'admin',
+                    isEmailVerified: true
+                });
+                dbUser = await this.userRepository.save(dbUser);
+            }
+        }
+        else {
+            dbUser = await this.userRepository.findOne({ where: { id: user.id } });
+        }
+        if (!dbUser) {
+            throw new common_1.UnauthorizedException('User record not found in database');
+        }
+        const { totalAmount } = bookingData.additionalDetails || { totalAmount: 0 };
         const booking = this.bookingRepository.create({
             serviceName: bookingData.serviceName,
             userEmail: user.email,
             status: bookings_entity_1.BookingStatus.PENDING,
-            user: user,
-            totalAmount: Number(totalAmount),
+            user: dbUser,
+            totalAmount: isNaN(Number(totalAmount)) ? 0 : Number(totalAmount),
             additionalDetails: bookingData.additionalDetails || {}
         });
         const savedBooking = await this.bookingRepository.save(booking);
-        await this.emailService.sendBookingNotification(savedBooking);
+        try {
+            await this.emailService.sendBookingNotification(savedBooking);
+        }
+        catch (emailError) {
+            console.error('Failed to send booking notification email:', emailError);
+        }
         return savedBooking;
     }
     async updateBooking(id, updateBookingDto, user) {
@@ -92,16 +120,21 @@ let BookingService = class BookingService {
         }
         booking.status = newStatus;
         const savedBooking = await this.bookingRepository.save(booking);
-        switch (newStatus) {
-            case bookings_entity_1.BookingStatus.CONFIRMED:
-                await this.emailService.sendBookingConfirmedNotification(savedBooking);
-                break;
-            case bookings_entity_1.BookingStatus.DELIVERED:
-                await this.emailService.sendServiceDeliveredNotification(savedBooking);
-                break;
-            case bookings_entity_1.BookingStatus.CANCELLED:
-                await this.emailService.sendBookingCancellationNotification(savedBooking);
-                break;
+        try {
+            switch (newStatus) {
+                case bookings_entity_1.BookingStatus.CONFIRMED:
+                    await this.emailService.sendBookingConfirmedNotification(savedBooking);
+                    break;
+                case bookings_entity_1.BookingStatus.DELIVERED:
+                    await this.emailService.sendServiceDeliveredNotification(savedBooking);
+                    break;
+                case bookings_entity_1.BookingStatus.CANCELLED:
+                    await this.emailService.sendBookingCancellationNotification(savedBooking);
+                    break;
+            }
+        }
+        catch (emailError) {
+            console.error(`Failed to send status update email (${newStatus}):`, emailError);
         }
         return savedBooking;
     }
@@ -157,7 +190,9 @@ exports.BookingService = BookingService;
 exports.BookingService = BookingService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(bookings_entity_1.Booking)),
+    __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         email_service_1.EmailService])
 ], BookingService);
 //# sourceMappingURL=bookings.service.js.map

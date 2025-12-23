@@ -57,7 +57,7 @@ let PaymentService = class PaymentService {
             throw new common_1.InternalServerErrorException(errorMsg);
         }
     }
-    async initiatePayment(bookingId, userId) {
+    async initiatePayment(bookingId, userId, payFull = false, isBalance = false) {
         const booking = await this.bookingRepository.findOne({
             where: { id: bookingId },
             relations: ['user']
@@ -68,8 +68,24 @@ let PaymentService = class PaymentService {
         if (booking.user.id !== userId) {
             throw new common_1.BadRequestException('You are not authorized to make payment for this booking');
         }
-        const amount = booking.totalAmount > 0 ? booking.totalAmount * 0.5 : 60000;
-        const txRef = `LV-${booking.id}-${Date.now()}`;
+        let amount = 0;
+        let type = 'deposit';
+        if (isBalance) {
+            amount = booking.totalAmount - (booking.amountPaid || 0);
+            type = 'balance';
+        }
+        else if (payFull) {
+            amount = booking.totalAmount;
+            type = 'full';
+        }
+        else {
+            amount = booking.totalAmount > 0 ? booking.totalAmount * 0.5 : 60000;
+            type = 'deposit';
+        }
+        if (amount <= 0) {
+            throw new common_1.BadRequestException('Payment amount must be greater than 0');
+        }
+        const txRef = `LV-${booking.id}-${type}-${Date.now()}`;
         const payload = {
             amount: String(amount),
             currency: this.payChanguCurrency,
@@ -85,7 +101,8 @@ let PaymentService = class PaymentService {
             },
             meta: {
                 bookingId: String(booking.id),
-                serviceName: booking.serviceName
+                serviceName: booking.serviceName,
+                paymentType: type
             }
         };
         console.log('Initiating PayChangu payment with payload:', JSON.stringify(payload, null, 2));
@@ -122,10 +139,17 @@ let PaymentService = class PaymentService {
                 where: { transactionReference: txRef }
             });
             if (booking) {
-                const expectedAmount = booking.totalAmount > 0 ? booking.totalAmount * 0.5 : 60000;
-                if (isSuccess && Number(amount) === Number(expectedAmount) && currency === this.payChanguCurrency) {
-                    booking.paymentStatus = bookings_entity_1.PaymentStatus.PARTIAL;
-                    booking.amountPaid = Number(amount);
+                const txRefParts = txRef.split('-');
+                const paymentType = txRefParts[2] || 'deposit';
+                if (isSuccess && currency === this.payChanguCurrency) {
+                    const paidAmount = Number(amount);
+                    booking.amountPaid = (Number(booking.amountPaid) || 0) + paidAmount;
+                    if (booking.amountPaid >= booking.totalAmount) {
+                        booking.paymentStatus = bookings_entity_1.PaymentStatus.PAID;
+                    }
+                    else {
+                        booking.paymentStatus = bookings_entity_1.PaymentStatus.PARTIAL;
+                    }
                 }
                 else if (!isSuccess) {
                     booking.paymentStatus = bookings_entity_1.PaymentStatus.FAILED;
@@ -135,11 +159,17 @@ let PaymentService = class PaymentService {
                     paymentMeta: verifyResponse?.data || {}
                 };
                 await this.bookingRepository.save(booking);
+                return {
+                    success: isSuccess,
+                    message: isSuccess ? 'Payment verified successfully' : 'Payment verification failed',
+                    bookingId: booking.id,
+                    type: paymentType
+                };
             }
             return {
                 success: isSuccess,
                 message: isSuccess ? 'Payment verified successfully' : 'Payment verification failed',
-                booking
+                type: 'unknown'
             };
         }
         catch (error) {

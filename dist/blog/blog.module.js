@@ -11,13 +11,13 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const blog_controller_1 = require("./blog.controller");
 const blog_service_1 = require("./blog.service");
-const blog_entity_1 = require("../entities/blog.entity");
+const entities_1 = require("../entities");
 let BlogModule = class BlogModule {
 };
 exports.BlogModule = BlogModule;
 exports.BlogModule = BlogModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([blog_entity_1.Blog])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([entities_1.Blog, entities_1.BlogReview])],
         controllers: [blog_controller_1.BlogController],
         providers: [blog_service_1.BlogService],
         exports: [blog_service_1.BlogService],

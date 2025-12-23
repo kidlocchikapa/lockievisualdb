@@ -34,10 +34,10 @@ let BlogController = class BlogController {
     async findOne(id) {
         return await this.blogService.findOne(id);
     }
+    async addReview(id, reviewData) {
+        return await this.blogService.addReview(id, reviewData);
+    }
     async create(file, blogData) {
-        console.log('--- DEBUG START ---');
-        console.log('File:', file ? file.originalname : 'No File');
-        console.log('Body:', blogData);
         if (file) {
             blogData.imageUrl = `/uploads/blogs/${file.filename}`;
         }
@@ -74,11 +74,19 @@ __decorate([
 ], BlogController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], BlogController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Post)(':id/reviews'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], BlogController.prototype, "addReview", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guards_1.RolesGuard),
     (0, decolators_1.Roles)(decolators_1.UserRole.ADMIN),
@@ -95,20 +103,20 @@ __decorate([
     (0, decolators_1.Roles)(decolators_1.UserRole.ADMIN),
     (0, common_1.Put)(':id'),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image', BlogController.storageConfig)),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.UploadedFile)()),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Object, update_blog_dto_1.UpdateBlogDto]),
+    __metadata("design:paramtypes", [String, Object, update_blog_dto_1.UpdateBlogDto]),
     __metadata("design:returntype", Promise)
 ], BlogController.prototype, "update", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guards_1.RolesGuard),
     (0, decolators_1.Roles)(decolators_1.UserRole.ADMIN),
     (0, common_1.Delete)(':id'),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], BlogController.prototype, "remove", null);
 exports.BlogController = BlogController = __decorate([

@@ -22,9 +22,36 @@ let PaymentController = class PaymentController {
     }
     async initPayment(body, req) {
         const userId = req.user.id;
-        return this.paymentService.initiatePayment(body.bookingId, userId);
+        return this.paymentService.initiatePayment(body.bookingId, userId, body.payFull, body.isBalance);
     }
-    async verifyPayment(txRef) {
+    async verifyPayment(txRef, status, req, referer) {
+        const result = await this.verifyPaymentLogic(txRef);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const redirectUrl = new URL(`${frontendUrl}/dashboard`);
+        if (result.success) {
+            redirectUrl.searchParams.append('payment', 'success');
+            redirectUrl.searchParams.append('type', result.type || 'deposit');
+            redirectUrl.searchParams.append('bookingId', result.bookingId?.toString() || '');
+        }
+        else {
+            redirectUrl.searchParams.append('payment', 'failed');
+            redirectUrl.searchParams.append('reason', result.message || 'Verification failed');
+        }
+        return `
+            <html>
+                <head>
+                    <title>Redirecting...</title>
+                    <script>
+                        window.location.href = "${redirectUrl.toString()}";
+                    </script>
+                </head>
+                <body>
+                    <p>Redirecting back to dashboard... If not redirected, <a href="${redirectUrl.toString()}">click here</a>.</p>
+                </body>
+            </html>
+        `;
+    }
+    async verifyPaymentLogic(txRef) {
         return this.paymentService.verifyPayment(txRef);
     }
     async handleWebhook(signature, req) {
@@ -51,8 +78,11 @@ __decorate([
 __decorate([
     (0, common_1.Get)('verify'),
     __param(0, (0, common_1.Query)('tx_ref')),
+    __param(1, (0, common_1.Query)('status')),
+    __param(2, (0, common_1.Req)()),
+    __param(3, (0, common_1.Headers)('referer')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String, Object, String]),
     __metadata("design:returntype", Promise)
 ], PaymentController.prototype, "verifyPayment", null);
 __decorate([

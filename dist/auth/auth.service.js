@@ -98,7 +98,8 @@ let AuthService = AuthService_1 = class AuthService {
             const payload = {
                 sub: user.id,
                 email: user.email,
-                isEmailVerified: user.isEmailVerified
+                isEmailVerified: user.isEmailVerified,
+                role: user.role
             };
             const access_token = await this.jwtService.sign(payload);
             return {

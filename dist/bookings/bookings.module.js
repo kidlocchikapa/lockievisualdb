@@ -13,12 +13,13 @@ const bookings_controller_1 = require("./bookings.controller");
 const bookings_service_1 = require("./bookings.service");
 const email_service_1 = require("../email.service");
 const bookings_entity_1 = require("../entities/bookings.entity");
+const user_entity_1 = require("../entities/user.entity");
 let BookingModule = class BookingModule {
 };
 exports.BookingModule = BookingModule;
 exports.BookingModule = BookingModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([bookings_entity_1.Booking])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([bookings_entity_1.Booking, user_entity_1.User])],
         controllers: [bookings_controller_1.BookingController],
         providers: [bookings_service_1.BookingService, email_service_1.EmailService],
         exports: [bookings_service_1.BookingService],
