@@ -9,11 +9,14 @@ const path = require("path");
 async function bootstrap() {
     const uploadsDir = path.join(process.cwd(), 'uploads');
     const blogsDir = path.join(uploadsDir, 'blogs');
-    if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir);
+    try {
+        if (!fs.existsSync(blogsDir)) {
+            fs.mkdirSync(blogsDir, { recursive: true });
+            console.log('Created uploads/blogs directory');
+        }
     }
-    if (!fs.existsSync(blogsDir)) {
-        fs.mkdirSync(blogsDir);
+    catch (err) {
+        console.error('Error creating upload directories:', err);
     }
     const app = await core_1.NestFactory.create(app_module_1.AppModule, {
         rawBody: true,

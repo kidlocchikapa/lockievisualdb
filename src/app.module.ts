@@ -11,6 +11,8 @@ import { LoggerOptions } from 'typeorm';
 import * as entities from './entities'; // Ensure these are all classes (not objects/functions)
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import * as path from 'path';
+
 
 // Modules
 import { AuthModule } from './auth/auth.module';
@@ -34,10 +36,11 @@ import { PaymentModule } from './payment/payment.module';
     }),
 
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
+      rootPath: path.join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
       serveStaticOptions: {
         index: false,
+        redirect: false,
       },
     }),
 
