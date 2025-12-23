@@ -2,14 +2,20 @@ import {
     Entity,
     PrimaryGeneratedColumn,
     Column,
+    OneToMany,
     CreateDateColumn,
     UpdateDateColumn
 } from 'typeorm';
 
+import { BlogReview } from './blog-review.entity';
+
 @Entity()
 export class Blog {
-    @PrimaryGeneratedColumn('increment')
-    id: number;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
+
+    @OneToMany(() => BlogReview, (review) => review.blog, { cascade: true })
+    reviews: BlogReview[];
 
     @Column()
     title: string;

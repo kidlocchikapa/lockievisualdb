@@ -47,8 +47,17 @@ export class BlogController {
 
     // Public: Fetch a single blog
     @Get(':id')
-    async findOne(@Param('id', ParseIntPipe) id: number) {
+    async findOne(@Param('id') id: string) {
         return await this.blogService.findOne(id);
+    }
+
+    // Public: Add review to a blog
+    @Post(':id/reviews')
+    async addReview(
+        @Param('id') id: string,
+        @Body() reviewData: { name: string; comment: string; rating: number }
+    ) {
+        return await this.blogService.addReview(id, reviewData);
     }
 
     // Admin: Create a blog
@@ -60,13 +69,9 @@ export class BlogController {
         @UploadedFile() file: any,
         @Body() blogData: CreateBlogDto
     ) {
-        console.log('--- DEBUG START ---');
-        console.log('File:', file ? file.originalname : 'No File');
-        console.log('Body:', blogData);
         if (file) {
             blogData.imageUrl = `/uploads/blogs/${file.filename}`;
         }
-        // Boolean conversion handled by DTO Transform
         return await this.blogService.create(blogData);
     }
 
@@ -74,17 +79,15 @@ export class BlogController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMIN)
     @Put(':id')
-
     @UseInterceptors(FileInterceptor('image', BlogController.storageConfig))
     async update(
-        @Param('id', ParseIntPipe) id: number,
+        @Param('id') id: string,
         @UploadedFile() file: any,
         @Body() blogData: UpdateBlogDto
     ) {
         if (file) {
             blogData.imageUrl = `/uploads/blogs/${file.filename}`;
         }
-        // Boolean conversion handled by DTO Transform
         return await this.blogService.update(id, blogData);
     }
 
@@ -92,7 +95,7 @@ export class BlogController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMIN)
     @Delete(':id')
-    async remove(@Param('id', ParseIntPipe) id: number) {
+    async remove(@Param('id') id: string) {
         await this.blogService.remove(id);
         return { message: 'Blog deleted successfully' };
     }
