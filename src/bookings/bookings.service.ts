@@ -24,12 +24,18 @@ export class BookingService {
       userEmail: user.email,
       status: BookingStatus.PENDING,
       user: user,
-      totalAmount: Number(totalAmount),
+      totalAmount: isNaN(Number(totalAmount)) ? 0 : Number(totalAmount),
       additionalDetails: bookingData.additionalDetails || {}
     });
 
     const savedBooking = await this.bookingRepository.save(booking);
-    await this.emailService.sendBookingNotification(savedBooking);
+
+    // Shield booking creation from email failures
+    try {
+      await this.emailService.sendBookingNotification(savedBooking);
+    } catch (emailError) {
+      console.error('Failed to send booking notification email:', emailError);
+    }
 
     return savedBooking;
   }
@@ -110,16 +116,21 @@ export class BookingService {
     const savedBooking = await this.bookingRepository.save(booking);
 
     // Send appropriate notifications based on status change
-    switch (newStatus) {
-      case BookingStatus.CONFIRMED:
-        await this.emailService.sendBookingConfirmedNotification(savedBooking);
-        break;
-      case BookingStatus.DELIVERED:
-        await this.emailService.sendServiceDeliveredNotification(savedBooking);
-        break;
-      case BookingStatus.CANCELLED:
-        await this.emailService.sendBookingCancellationNotification(savedBooking);
-        break;
+    // Shield booking status change from email failures
+    try {
+      switch (newStatus) {
+        case BookingStatus.CONFIRMED:
+          await this.emailService.sendBookingConfirmedNotification(savedBooking);
+          break;
+        case BookingStatus.DELIVERED:
+          await this.emailService.sendServiceDeliveredNotification(savedBooking);
+          break;
+        case BookingStatus.CANCELLED:
+          await this.emailService.sendBookingCancellationNotification(savedBooking);
+          break;
+      }
+    } catch (emailError) {
+      console.error(`Failed to send status update email (${newStatus}):`, emailError);
     }
 
     return savedBooking;

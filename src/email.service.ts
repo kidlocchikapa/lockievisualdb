@@ -8,7 +8,7 @@ import { join } from 'path';
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private readonly logoPath = join(process.cwd(), 'assets', 'LogoImage.png');
+  private readonly logoPath = join(__dirname, '..', 'assets', 'LogoImage.png');
 
   constructor(
     private readonly mailerService: MailerService,
