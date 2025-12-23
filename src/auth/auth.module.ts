@@ -20,8 +20,8 @@ import { EmailModule } from '../email.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
-        signOptions: { 
-          expiresIn: config.get<string>('JWT_EXPIRATION', '1h') 
+        signOptions: {
+          expiresIn: config.get<string>('JWT_EXPIRATION', '7d')
         },
       }),
     }),
@@ -29,10 +29,10 @@ import { EmailModule } from '../email.module';
   ],
   controllers: [AuthController],
   providers: [
-    AuthService, 
+    AuthService,
     JwtStrategy,
     ConfigService, // Add ConfigService to providers
   ],
   exports: [AuthService, JwtStrategy, PassportModule], // Export additional modules
 })
-export class AuthModule {}
+export class AuthModule { }
