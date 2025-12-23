@@ -36,7 +36,6 @@ import { PaymentModule } from './payment/payment.module';
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
-      renderPath: '/uploads',
       serveStaticOptions: {
         index: false,
       },
