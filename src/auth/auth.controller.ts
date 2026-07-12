@@ -5,14 +5,18 @@ import {
   Body,
   Get,
   Query,
+  Req,
   UnauthorizedException,
   Logger,
   HttpCode,
-  HttpStatus
+  HttpStatus,
+  UseGuards
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './jwt.auth-guard';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { LoginDto } from '../dto/login.dto';
+import { ChangePasswordDto } from '../dto/change-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -68,6 +72,13 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body('email') email: string) {
     return await this.authService.forgotPassword(email);
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async changePassword(@Req() req, @Body() changePasswordDto: ChangePasswordDto) {
+    return await this.authService.changePassword(req.user.id, changePasswordDto.currentPassword, changePasswordDto.newPassword);
   }
 
   @Post('reset-password')
