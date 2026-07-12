@@ -1,7 +1,10 @@
-import { Controller, Post, Get, Param, UseGuards, HttpException, HttpStatus, ParseIntPipe, Body } from '@nestjs/common';
+import { Controller, Post, Get, Param, UseGuards, HttpException, HttpStatus, ParseIntPipe, Body, Delete } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt.auth-guard';
 import { RolesGuard } from '../auth/roles.guards'
 import { Roles, UserRole } from '../decolators';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../entities/user.entity';
 import { BookingService } from '../bookings/bookings.service';
 import { BookingStatus } from '../entities/bookings.entity';
 import { FeedbackService } from '../feedback/feedback.service';
@@ -17,6 +20,8 @@ export class AdminController {
     private readonly feedbackService: FeedbackService,
     private readonly contactService: ContactService,
     private readonly emailService: EmailService,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) { }
 
   @Get('bookings')
@@ -159,5 +164,61 @@ export class AdminController {
   @Post('feedback/:id/read')
   async markFeedbackRead(@Param('id', ParseIntPipe) id: number) {
     return await this.feedbackService.markAsRead(id);
+  }
+
+  @Get('users')
+  async getAllUsers() {
+    try {
+      const users = await this.userRepository.find({
+        select: ['id', 'fullName', 'email', 'role', 'isEmailVerified', 'createdAt'],
+        order: { createdAt: 'DESC' },
+      });
+      return users;
+    } catch (error) {
+      throw new HttpException('Failed to fetch users', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post('users')
+  async createAdmin(@Body() body: { email: string; fullName: string; password: string }) {
+    try {
+      const existing = await this.userRepository.findOne({ where: { email: body.email } });
+      if (existing) {
+        existing.role = 'admin';
+        await this.userRepository.save(existing);
+        return { message: 'User promoted to admin', user: { id: existing.id, email: existing.email, role: existing.role } };
+      }
+      const bcrypt = require('bcrypt');
+      const hashedPassword = await bcrypt.hash(body.password, 10);
+      const user = this.userRepository.create({
+        fullName: body.fullName,
+        email: body.email,
+        password: hashedPassword,
+        role: 'admin',
+        isEmailVerified: true,
+      });
+      await this.userRepository.save(user);
+      return { message: 'Admin created successfully', user: { id: user.id, email: user.email, role: user.role } };
+    } catch (error) {
+      throw new HttpException(error.message || 'Failed to create admin', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Delete('users/:id')
+  async deleteUser(@Param('id', ParseIntPipe) id: number) {
+    try {
+      if (id === 0) {
+        throw new HttpException('Cannot delete master admin', HttpStatus.BAD_REQUEST);
+      }
+      const user = await this.userRepository.findOne({ where: { id } });
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+      await this.userRepository.remove(user);
+      return { message: 'User deleted successfully' };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException('Failed to delete user', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }
