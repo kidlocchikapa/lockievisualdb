@@ -35,6 +35,21 @@ export class Blog {
     @Column({ default: true })
     isPublished: boolean;
 
+    @Column({ default: false })
+    showcaseEnabled: boolean;
+
+    @Column({ nullable: true })
+    showcaseImage: string;
+
+    @Column({ nullable: true })
+    showcaseCta: string;
+
+    @Column({ nullable: true })
+    showcaseTitle: string;
+
+    @Column({ nullable: true, type: 'text' })
+    showcaseDescription: string;
+
     @CreateDateColumn()
     createdAt: Date;
 

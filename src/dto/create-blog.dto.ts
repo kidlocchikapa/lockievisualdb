@@ -30,4 +30,29 @@ export class CreateBlogDto {
     @IsOptional()
     @IsString()
     imageUrl?: string;
+
+    @IsOptional()
+    @Transform(({ value }) => {
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        return value;
+    })
+    @IsBoolean()
+    showcaseEnabled?: boolean;
+
+    @IsOptional()
+    @IsString()
+    showcaseImage?: string;
+
+    @IsOptional()
+    @IsString()
+    showcaseCta?: string;
+
+    @IsOptional()
+    @IsString()
+    showcaseTitle?: string;
+
+    @IsOptional()
+    @IsString()
+    showcaseDescription?: string;
 }
