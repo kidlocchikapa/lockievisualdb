@@ -16,8 +16,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
+const jwt_auth_guard_1 = require("./jwt.auth-guard");
 const create_user_dto_1 = require("../dto/create-user.dto");
 const login_dto_1 = require("../dto/login.dto");
+const change_password_dto_1 = require("../dto/change-password.dto");
 let AuthController = AuthController_1 = class AuthController {
     constructor(authService) {
         this.authService = authService;
@@ -61,6 +63,9 @@ let AuthController = AuthController_1 = class AuthController {
     }
     async forgotPassword(email) {
         return await this.authService.forgotPassword(email);
+    }
+    async changePassword(req, changePasswordDto) {
+        return await this.authService.changePassword(req.user.id, changePasswordDto.currentPassword, changePasswordDto.newPassword);
     }
     async resetPassword(token, newPassword) {
         return await this.authService.resetPassword(token, newPassword);
@@ -107,6 +112,16 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "forgotPassword", null);
+__decorate([
+    (0, common_1.Post)('change-password'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, change_password_dto_1.ChangePasswordDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "changePassword", null);
 __decorate([
     (0, common_1.Post)('reset-password'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),

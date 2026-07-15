@@ -58,19 +58,22 @@ import { PaymentModule } from './payment/payment.module';
           synchronize: !isProduction && !configService.get<boolean>('DB_MIGRATIONS'),
           migrations: ['dist/migrations/*.js'],
           migrationsRun: configService.get<boolean>('DB_MIGRATIONS', false),
-          retryAttempts: 3,
-          retryDelay: 3000,
+          retryAttempts: 10,
+          retryDelay: 5000,
         };
 
         if (isProduction) {
           return {
             ...baseConfig,
             url: configService.get<string>('DATABASE_URL'),
-            ssl: {
-              rejectUnauthorized: false,
-            },
-            migrationsRun: true,
-            synchronize: true,
+          ssl: {
+            rejectUnauthorized: false,
+          },
+          extra: {
+            connectionTimeoutMillis: 60000,
+          },
+          migrationsRun: true,
+          synchronize: true,
           };
         }
 

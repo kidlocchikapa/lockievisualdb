@@ -194,6 +194,20 @@ let AuthService = AuthService_1 = class AuthService {
             throw new common_1.BadRequestException('Failed to process forgot password request.');
         }
     }
+    async changePassword(userId, currentPassword, newPassword) {
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordValid) {
+            throw new common_1.UnauthorizedException('Current password is incorrect');
+        }
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await this.userRepository.save(user);
+        return { message: 'Password changed successfully' };
+    }
     async resetPassword(token, newPassword) {
         try {
             const user = await this.userRepository.findOne({

@@ -17,16 +17,20 @@ const common_1 = require("@nestjs/common");
 const jwt_auth_guard_1 = require("../auth/jwt.auth-guard");
 const roles_guards_1 = require("../auth/roles.guards");
 const decolators_1 = require("../decolators");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
+const user_entity_1 = require("../entities/user.entity");
 const bookings_service_1 = require("../bookings/bookings.service");
 const feedback_service_1 = require("../feedback/feedback.service");
 const contact_service_1 = require("../contact/contact.service");
 const email_service_1 = require("../email.service");
 let AdminController = class AdminController {
-    constructor(bookingService, feedbackService, contactService, emailService) {
+    constructor(bookingService, feedbackService, contactService, emailService, userRepository) {
         this.bookingService = bookingService;
         this.feedbackService = feedbackService;
         this.contactService = contactService;
         this.emailService = emailService;
+        this.userRepository = userRepository;
     }
     async getAllBookings() {
         try {
@@ -133,6 +137,60 @@ let AdminController = class AdminController {
     async markFeedbackRead(id) {
         return await this.feedbackService.markAsRead(id);
     }
+    async getAllUsers() {
+        try {
+            const users = await this.userRepository.find({
+                select: ['id', 'fullName', 'email', 'role', 'isEmailVerified', 'createdAt'],
+                order: { createdAt: 'DESC' },
+            });
+            return users;
+        }
+        catch (error) {
+            throw new common_1.HttpException('Failed to fetch users', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async createAdmin(body) {
+        try {
+            const existing = await this.userRepository.findOne({ where: { email: body.email } });
+            if (existing) {
+                existing.role = 'admin';
+                await this.userRepository.save(existing);
+                return { message: 'User promoted to admin', user: { id: existing.id, email: existing.email, role: existing.role } };
+            }
+            const bcrypt = require('bcrypt');
+            const hashedPassword = await bcrypt.hash(body.password, 10);
+            const user = this.userRepository.create({
+                fullName: body.fullName,
+                email: body.email,
+                password: hashedPassword,
+                role: 'admin',
+                isEmailVerified: true,
+            });
+            await this.userRepository.save(user);
+            return { message: 'Admin created successfully', user: { id: user.id, email: user.email, role: user.role } };
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.message || 'Failed to create admin', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async deleteUser(id) {
+        try {
+            if (id === 0) {
+                throw new common_1.HttpException('Cannot delete master admin', common_1.HttpStatus.BAD_REQUEST);
+            }
+            const user = await this.userRepository.findOne({ where: { id } });
+            if (!user) {
+                throw new common_1.HttpException('User not found', common_1.HttpStatus.NOT_FOUND);
+            }
+            await this.userRepository.remove(user);
+            return { message: 'User deleted successfully' };
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Failed to delete user', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 };
 exports.AdminController = AdminController;
 __decorate([
@@ -216,13 +274,35 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "markFeedbackRead", null);
+__decorate([
+    (0, common_1.Get)('users'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "getAllUsers", null);
+__decorate([
+    (0, common_1.Post)('users'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "createAdmin", null);
+__decorate([
+    (0, common_1.Delete)('users/:id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "deleteUser", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.Controller)('admin'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guards_1.RolesGuard),
     (0, decolators_1.Roles)(decolators_1.UserRole.ADMIN),
+    __param(4, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [bookings_service_1.BookingService,
         feedback_service_1.FeedbackService,
         contact_service_1.ContactService,
-        email_service_1.EmailService])
+        email_service_1.EmailService,
+        typeorm_2.Repository])
 ], AdminController);
 //# sourceMappingURL=admin.controller.js.map
