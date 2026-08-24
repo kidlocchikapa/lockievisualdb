@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 
 import { LokiKnowledge } from './entities/loki-knowledge.entity';
 import { Service } from '../entities/service.entity';
@@ -36,16 +37,21 @@ export class LokiIndexerService implements OnModuleInit, OnModuleDestroy {
         @InjectRepository(Blog)
         private readonly blogRepo: Repository<Blog>,
         private readonly gemini: GeminiService,
+        private readonly config: ConfigService,
     ) {}
 
     async onModuleInit() {
         // Fire and forget so a cold embed doesn't block boot; index fills within seconds.
         this.reindex().catch((err) => this.logger.error(`Initial reindex failed: ${err?.message ?? err}`));
-        // Refresh living knowledge every 30 minutes
-        this.refreshTimer = setInterval(() => {
-            this.reindex().catch((err) => this.logger.error(`Scheduled reindex failed: ${err?.message ?? err}`));
-        }, 30 * 60 * 1000);
-        if (typeof this.refreshTimer.unref === 'function') this.refreshTimer.unref();
+        // Refresh living knowledge on a configurable schedule (LOKI_INDEXER_MINUTES, default 30; 0 disables).
+        const minutes = parseInt(this.config.get<string>('LOKI_INDEXER_MINUTES', '30'), 10);
+        if (minutes > 0) {
+            this.refreshTimer = setInterval(() => {
+                this.reindex().catch((err) => this.logger.error(`Scheduled reindex failed: ${err?.message ?? err}`));
+            }, minutes * 60 * 1000);
+            if (typeof this.refreshTimer.unref === 'function') this.refreshTimer.unref();
+            this.logger.log(`Loki knowledge refresh scheduled every ${minutes} minute(s)`);
+        }
     }
 
     onModuleDestroy() {
