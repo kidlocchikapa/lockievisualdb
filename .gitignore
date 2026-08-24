@@ -1,1 +1,11 @@
 node_modules
+
+# Environment / secrets
+.env
+.env.*
+!.env.paychangu.example
+
+# OS / build noise
+*_Zone.Identifier
+*.tsbuildinfo
+dist

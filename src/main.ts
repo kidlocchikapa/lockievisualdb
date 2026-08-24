@@ -35,7 +35,7 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Signature'], // Add Signature header for webhooks
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Signature', 'x-loki-device'], // Signature for webhooks, x-loki-device for Ask Loki
   });
 
   app.useGlobalPipes(new ValidationPipe({

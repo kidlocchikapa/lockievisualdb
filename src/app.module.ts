@@ -27,6 +27,9 @@ import { ContactModule } from './contact/contact.module';
 import { ServiceModule } from './service/service.module';
 import { PaymentModule } from './payment/payment.module';
 
+// AI Assistant
+import { LokiModule } from './loki/loki.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -99,6 +102,7 @@ import { PaymentModule } from './payment/payment.module';
     ContactModule,
     ServiceModule,
     PaymentModule,
+    LokiModule,
 
     // Single entity for contact module
   ],
