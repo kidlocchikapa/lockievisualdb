@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
 import { Booking } from './entities/bookings.entity';
@@ -11,7 +11,7 @@ export class EmailService {
   private readonly logoPath = join(__dirname, '..', 'assets', 'LogoImage.png');
 
   constructor(
-    private readonly mailerService: MailerService,
+    @Optional() private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
   ) { }
 
@@ -67,6 +67,10 @@ export class EmailService {
     subject: string;
     html: string;
   }): Promise<void> {
+    if (!this.mailerService) {
+      this.logger.warn('Mailer service unavailable; skipping email send.');
+      return;
+    }
     try {
       await this.mailerService.sendMail({
         ...options,

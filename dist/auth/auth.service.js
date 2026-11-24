@@ -18,7 +18,7 @@ const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
-const bcrypt = require("bcrypt");
+const password_util_1 = require("../utils/password.util");
 const uuid_1 = require("uuid");
 const user_entity_1 = require("../entities/user.entity");
 const email_service_1 = require("../email.service");
@@ -38,7 +38,7 @@ let AuthService = AuthService_1 = class AuthService {
             if (existingUser) {
                 throw new common_1.UnauthorizedException('Email already exists');
             }
-            const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+            const hashedPassword = await (0, password_util_1.hashPassword)(createUserDto.password);
             const verificationToken = (0, uuid_1.v4)();
             const verificationTokenExpiry = (0, date_fns_1.addHours)(new Date(), 24);
             const user = this.userRepository.create({
@@ -91,7 +91,7 @@ let AuthService = AuthService_1 = class AuthService {
             if (!user.isEmailVerified) {
                 throw new common_1.UnauthorizedException('Please verify your email before logging in');
             }
-            const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+            const isPasswordValid = await (0, password_util_1.comparePassword)(loginDto.password, user.password);
             if (!isPasswordValid) {
                 throw new common_1.UnauthorizedException('Invalid credentials');
             }
@@ -199,11 +199,11 @@ let AuthService = AuthService_1 = class AuthService {
         if (!user) {
             throw new common_1.NotFoundException('User not found');
         }
-        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        const isPasswordValid = await (0, password_util_1.comparePassword)(currentPassword, user.password);
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('Current password is incorrect');
         }
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const hashedPassword = await (0, password_util_1.hashPassword)(newPassword);
         user.password = hashedPassword;
         await this.userRepository.save(user);
         return { message: 'Password changed successfully' };
@@ -219,7 +219,7 @@ let AuthService = AuthService_1 = class AuthService {
             if (new Date() > user.resetPasswordExpiry) {
                 throw new common_1.BadRequestException('Reset token has expired');
             }
-            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            const hashedPassword = await (0, password_util_1.hashPassword)(newPassword);
             user.password = hashedPassword;
             user.resetPasswordToken = null;
             user.resetPasswordExpiry = null;

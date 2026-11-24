@@ -24,6 +24,7 @@ const email_module_1 = require("./email.module");
 const contact_module_1 = require("./contact/contact.module");
 const service_module_1 = require("./service/service.module");
 const payment_module_1 = require("./payment/payment.module");
+const loki_module_1 = require("./loki/loki.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -56,8 +57,8 @@ exports.AppModule = AppModule = __decorate([
                         synchronize: !isProduction && !configService.get('DB_MIGRATIONS'),
                         migrations: ['dist/migrations/*.js'],
                         migrationsRun: configService.get('DB_MIGRATIONS', false),
-                        retryAttempts: 3,
-                        retryDelay: 3000,
+                        retryAttempts: 10,
+                        retryDelay: 5000,
                     };
                     if (isProduction) {
                         return {
@@ -65,6 +66,9 @@ exports.AppModule = AppModule = __decorate([
                             url: configService.get('DATABASE_URL'),
                             ssl: {
                                 rejectUnauthorized: false,
+                            },
+                            extra: {
+                                connectionTimeoutMillis: 60000,
                             },
                             migrationsRun: true,
                             synchronize: true,
@@ -89,6 +93,7 @@ exports.AppModule = AppModule = __decorate([
             contact_module_1.ContactModule,
             service_module_1.ServiceModule,
             payment_module_1.PaymentModule,
+            loki_module_1.LokiModule,
         ],
         controllers: [],
         providers: [

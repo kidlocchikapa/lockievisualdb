@@ -24,6 +24,7 @@ const bookings_service_1 = require("../bookings/bookings.service");
 const feedback_service_1 = require("../feedback/feedback.service");
 const contact_service_1 = require("../contact/contact.service");
 const email_service_1 = require("../email.service");
+const password_util_1 = require("../utils/password.util");
 let AdminController = class AdminController {
     constructor(bookingService, feedbackService, contactService, emailService, userRepository) {
         this.bookingService = bookingService;
@@ -157,8 +158,7 @@ let AdminController = class AdminController {
                 await this.userRepository.save(existing);
                 return { message: 'User promoted to admin', user: { id: existing.id, email: existing.email, role: existing.role } };
             }
-            const bcrypt = require('bcrypt');
-            const hashedPassword = await bcrypt.hash(body.password, 10);
+            const hashedPassword = await (0, password_util_1.hashPassword)(body.password);
             const user = this.userRepository.create({
                 fullName: body.fullName,
                 email: body.email,

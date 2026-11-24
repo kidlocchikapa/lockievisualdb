@@ -23,7 +23,7 @@ async function bootstrap() {
     });
     app.enableCors({
         origin: (origin, callback) => {
-            if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1') || origin === 'https://lockievisuals.vercel.app' || origin.includes('onrender.com')) {
+            if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1') || origin === 'https://lockievisuals.vercel.app' || origin === 'https://www.lockievisuals.me' || origin.includes('onrender.com')) {
                 callback(null, true);
             }
             else {
@@ -32,7 +32,7 @@ async function bootstrap() {
         },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Signature'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Signature', 'x-loki-device'],
     });
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,

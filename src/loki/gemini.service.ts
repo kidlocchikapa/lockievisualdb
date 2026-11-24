@@ -12,6 +12,7 @@ export class GeminiService {
     private readonly logger = new Logger(GeminiService.name);
     private client: GoogleGenerativeAI;
     private chatModel: GenerativeModel;
+    private fallbackChatModel: GenerativeModel;
     private embeddingModelName = 'gemini-embedding-001';
 
     constructor(private config: ConfigService) {
@@ -21,7 +22,9 @@ export class GeminiService {
         }
         this.client = new GoogleGenerativeAI(apiKey);
         const modelName = this.config.get<string>('GEMINI_MODEL', 'gemini-3.6-flash');
+        const fallbackModelName = this.config.get<string>('GEMINI_FALLBACK_MODEL', 'gemini-flash-lite-latest');
         this.chatModel = this.client.getGenerativeModel({ model: modelName });
+        this.fallbackChatModel = this.client.getGenerativeModel({ model: fallbackModelName });
     }
 
     async generateReply(systemInstruction: string, history: GeminiHistoryTurn[], message: string): Promise<string> {
@@ -33,20 +36,33 @@ export class GeminiService {
                 .map((t) => ({ role: t.role, parts: [{ text: String(t.parts?.[0]?.text ?? '') }] }))
                 .filter((t) => t.parts[0].text.length > 0);
 
-            const chat = this.chatModel.startChat({
-                history: safeHistory,
-                generationConfig: {
-                    temperature: 0.6,
-                    maxOutputTokens: 1000,
-                    // thinkingLevel is Gemini 3.x; cast because SDK types predate it.
-                    thinkingConfig: { thinkingLevel: 'low' },
-                } as any,
-                systemInstruction,
-            });
+            const ask = async (model: GenerativeModel): Promise<string> => {
+                const chat = model.startChat({
+                    history: safeHistory,
+                    generationConfig: {
+                        temperature: 0.6,
+                        maxOutputTokens: 1000,
+                    },
+                    systemInstruction: {
+                        role: 'system',
+                        parts: [{ text: systemInstruction }],
+                    },
+                });
+                const result = await chat.sendMessage(message);
+                return result.response.text();
+            };
 
-            const result = await chat.sendMessage(message);
-            const text = result.response.text();
-            return text && text.trim().length > 0 ? text.trim() : 'Sorry, I could not come up with an answer right now. Please try again or reach us via the contact page.';
+            const normalize = (text: string): string =>
+                text && text.trim().length > 0
+                    ? text.trim()
+                    : 'Sorry, I could not come up with an answer right now. Please try again or reach us via the contact page.';
+
+            try {
+                return normalize(await ask(this.chatModel));
+            } catch (primaryErr) {
+                this.logger.warn(`Primary Gemini model failed, trying fallback: ${primaryErr?.message ?? primaryErr}`);
+                return normalize(await ask(this.fallbackChatModel));
+            }
         } catch (err) {
             this.logger.error(`Gemini generateReply failed: ${err?.message ?? err}`);
             throw new InternalServerErrorException('Loki is having trouble thinking right now. Please try again shortly.');

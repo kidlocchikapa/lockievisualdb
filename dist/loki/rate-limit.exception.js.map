@@ -1,0 +1,1 @@
+{"version":3,"file":"rate-limit.exception.js","sourceRoot":"","sources":["../../src/loki/rate-limit.exception.ts"],"names":[],"mappings":";;;AAAA,2CAA2D;AAE3D,MAAa,kBAAmB,SAAQ,sBAAa;IACjD,YAAY,OAAe;QACvB,KAAK,CAAC,EAAE,UAAU,EAAE,mBAAU,CAAC,iBAAiB,EAAE,OAAO,EAAE,EAAE,mBAAU,CAAC,iBAAiB,CAAC,CAAC;IAC/F,CAAC;CACJ;AAJD,gDAIC"}

@@ -3,7 +3,7 @@ import { Injectable, UnauthorizedException, NotFoundException, BadRequestExcepti
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
+import { hashPassword, comparePassword } from '../utils/password.util';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../entities/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
@@ -32,7 +32,7 @@ export class AuthService {
         throw new UnauthorizedException('Email already exists');
       }
 
-      const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+      const hashedPassword = await hashPassword(createUserDto.password);
       const verificationToken = uuidv4();
       const verificationTokenExpiry = addHours(new Date(), 24);
 
@@ -93,7 +93,7 @@ export class AuthService {
         throw new UnauthorizedException('Please verify your email before logging in');
       }
 
-      const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+      const isPasswordValid = await comparePassword(loginDto.password, user.password);
       if (!isPasswordValid) {
         throw new UnauthorizedException('Invalid credentials');
       }
@@ -220,11 +220,11 @@ export class AuthService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    const isPasswordValid = await comparePassword(currentPassword, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Current password is incorrect');
     }
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await hashPassword(newPassword);
     user.password = hashedPassword;
     await this.userRepository.save(user);
     return { message: 'Password changed successfully' };
@@ -244,7 +244,7 @@ export class AuthService {
         throw new BadRequestException('Reset token has expired');
       }
 
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      const hashedPassword = await hashPassword(newPassword);
       user.password = hashedPassword;
       user.resetPasswordToken = null;
       user.resetPasswordExpiry = null;

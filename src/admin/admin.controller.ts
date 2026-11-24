@@ -10,6 +10,7 @@ import { BookingStatus } from '../entities/bookings.entity';
 import { FeedbackService } from '../feedback/feedback.service';
 import { ContactService } from '../contact/contact.service';
 import { EmailService } from '../email.service';
+import { hashPassword } from '../utils/password.util';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -188,8 +189,7 @@ export class AdminController {
         await this.userRepository.save(existing);
         return { message: 'User promoted to admin', user: { id: existing.id, email: existing.email, role: existing.role } };
       }
-      const bcrypt = require('bcrypt');
-      const hashedPassword = await bcrypt.hash(body.password, 10);
+      const hashedPassword = await hashPassword(body.password);
       const user = this.userRepository.create({
         fullName: body.fullName,
         email: body.email,
