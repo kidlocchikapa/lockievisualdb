@@ -18,4 +18,11 @@ export const getTypeOrmConfig = async (
   ssl: configService.get('NODE_ENV') === 'production' 
     ? { rejectUnauthorized: false } 
     : undefined,
+  extra: {
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000,
+    connectionTimeoutMillis: 15000,
+    idleTimeoutMillis: 30000,
+    max: 10,
+  },
 });

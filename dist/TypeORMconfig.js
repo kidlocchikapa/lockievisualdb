@@ -12,6 +12,13 @@ const getTypeOrmConfig = async (configService) => ({
     ssl: configService.get('NODE_ENV') === 'production'
         ? { rejectUnauthorized: false }
         : undefined,
+    extra: {
+        keepAlive: true,
+        keepAliveInitialDelayMillis: 10000,
+        connectionTimeoutMillis: 15000,
+        idleTimeoutMillis: 30000,
+        max: 10,
+    },
 });
 exports.getTypeOrmConfig = getTypeOrmConfig;
 //# sourceMappingURL=TypeORMconfig.js.map
